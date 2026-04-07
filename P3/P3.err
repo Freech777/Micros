@@ -1,0 +1,11 @@
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 1 : Found directive in column 1. (LIST)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 2 : Found directive in column 1. (INCLUDE)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 4 : Found directive in column 1. (__CONFIG)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 7 : Found directive in column 1. (ORG)
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 16 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 19 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 26 : Found opcode in column 1. (goto)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 30 : Found opcode in column 1. (MOVF)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 31 : Found opcode in column 1. (XORLW)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 33 : Found opcode in column 1. (MOVWF)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P3\P3.ASM 35 : Found opcode in column 1. (goto)

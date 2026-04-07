@@ -1,0 +1,36 @@
+MPLINK 4.38, Linker
+Linker Map File - Created Tue Mar 24 23:10:38 2026
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000000
+                   .org_1       code   0x000000    program   0x000016
+        .config_2007_P3.O       code   0x002007    program   0x000002
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x00000a      
+                            0x002007    0x002007      
+            12 out of 8454 program addresses used, program memory utilization is 0%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+            CONFIGURACION   0x000000    program     static C:\Users\freem\Desktop\Micros_woo\P3\P3.asm
+                     MAIN   0x000007    program     static C:\Users\freem\Desktop\Micros_woo\P3\P3.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+            CONFIGURACION   0x000000    program     static C:\Users\freem\Desktop\Micros_woo\P3\P3.asm
+                     MAIN   0x000007    program     static C:\Users\freem\Desktop\Micros_woo\P3\P3.asm
+
+
