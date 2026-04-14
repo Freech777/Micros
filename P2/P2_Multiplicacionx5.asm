@@ -55,8 +55,6 @@ MAIN
     ; Enviar a PORTD
     MOVF TEMP, W
     MOVWF PORTD
-
-
 goto MAIN    
 
     END

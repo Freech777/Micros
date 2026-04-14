@@ -1,4 +1,4 @@
-MPASM  5.39                            P3.ASM   3-24-2026  23:10:37         PAGE  1
+MPASM  5.39                            P3.ASM   4-8-2026  21:21:15         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -57,7 +57,7 @@ Warning[203]: Found opcode in column 1. (XORLW)
 Warning[203]: Found opcode in column 1. (MOVWF)
 0009   0086           00033 MOVWF   PORTB
                       00034 
-MPASM  5.39                            P3.ASM   3-24-2026  23:10:37         PAGE  2
+MPASM  5.39                            P3.ASM   4-8-2026  21:21:15         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -67,7 +67,7 @@ Warning[203]: Found opcode in column 1. (goto)
 000A   2807           00035 goto MAIN    
                       00036 
                       00037     END
-MPASM  5.39                            P3.ASM   3-24-2026  23:10:37         PAGE  3
+MPASM  5.39                            P3.ASM   4-8-2026  21:21:15         PAGE  3
 
 
 SYMBOL TABLE
@@ -126,7 +126,7 @@ CHS1                              00000004
 CHS2                              00000005
 CIS                               00000003
 CKE                               00000006
-MPASM  5.39                            P3.ASM   3-24-2026  23:10:37         PAGE  4
+MPASM  5.39                            P3.ASM   4-8-2026  21:21:15         PAGE  4
 
 
 SYMBOL TABLE
@@ -185,7 +185,7 @@ INTEDG                            00000006
 INTF                              00000001
 IRP                               00000007
 MAIN                              00000007
-MPASM  5.39                            P3.ASM   3-24-2026  23:10:37         PAGE  5
+MPASM  5.39                            P3.ASM   4-8-2026  21:21:15         PAGE  5
 
 
 SYMBOL TABLE
@@ -244,7 +244,7 @@ RA3                               00000003
 RA4                               00000004
 RA5                               00000005
 RB0                               00000000
-MPASM  5.39                            P3.ASM   3-24-2026  23:10:37         PAGE  6
+MPASM  5.39                            P3.ASM   4-8-2026  21:21:15         PAGE  6
 
 
 SYMBOL TABLE
@@ -303,7 +303,7 @@ SPEN                              00000007
 SREN                              00000005
 SSPADD                            00000093
 SSPBUF                            00000013
-MPASM  5.39                            P3.ASM   3-24-2026  23:10:37         PAGE  7
+MPASM  5.39                            P3.ASM   4-8-2026  21:21:15         PAGE  7
 
 
 SYMBOL TABLE
@@ -362,7 +362,7 @@ TRISA5                            00000005
 TRISB                             00000086
 TRISB0                            00000000
 TRISB1                            00000001
-MPASM  5.39                            P3.ASM   3-24-2026  23:10:37         PAGE  8
+MPASM  5.39                            P3.ASM   4-8-2026  21:21:15         PAGE  8
 
 
 SYMBOL TABLE
@@ -421,7 +421,7 @@ _CPD_ON                           00003EFF
 _CP_ALL                           00001FFF
 _CP_OFF                           00003FFF
 _DEBUG_OFF                        00003FFF
-MPASM  5.39                            P3.ASM   3-24-2026  23:10:37         PAGE  9
+MPASM  5.39                            P3.ASM   4-8-2026  21:21:15         PAGE  9
 
 
 SYMBOL TABLE
