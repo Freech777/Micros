@@ -1,0 +1,46 @@
+MPLINK 4.38, Linker
+Linker Map File - Created Sun Apr 19 02:49:37 2026
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000000
+                   .org_1       code   0x000000    program   0x00005a
+.config_2007_SUMA_RESTA.O       code   0x002007    program   0x000002
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x00002c      
+                            0x002007    0x002007      
+            46 out of 8454 program addresses used, program memory utilization is 0%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+            CONFIGURACION   0x000000    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+                     MAIN   0x00000a    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+                RB0_SUMA3   0x000015    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+               RB1_RESTA2   0x00001b    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+                  RB2_OFF   0x000020    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+                  RB3_ON1   0x000023    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+                 RB4_OFF1   0x000028    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+            CONFIGURACION   0x000000    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+                     MAIN   0x00000a    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+                RB0_SUMA3   0x000015    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+               RB1_RESTA2   0x00001b    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+                  RB2_OFF   0x000020    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+                  RB3_ON1   0x000023    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+                 RB4_OFF1   0x000028    program     static C:\Users\freem\Desktop\Micros_woo\P4\suma_resta.asm
+
+
