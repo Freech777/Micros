@@ -14,7 +14,6 @@ CBLOCK 0x20
 
 ENDC
 CONFIGURACION
-; 🔹 Configuración
 BSF STATUS,RP0
 MOVLW b'11111111'
 MOVWF TRISB      ; PORTB entrada
@@ -23,19 +22,15 @@ BCF STATUS,RP0
 
 MAIN
 
-    ; 🔷 Leer PORTB
     MOVF PORTB,W
 
-    ; 🔹 Obtener RB3–RB0
     ANDLW b'00001111'
     MOVWF NUM2
 
-    ; 🔷 Obtener RB6–RB4
     MOVF PORTB,W
     ANDLW b'01110000'
     MOVWF NUM1
 
-    ; 🔹 Alinear NUM1 (shift derecha 4 veces)
     BCF STATUS,C
     RRF NUM1,1
     BCF STATUS,C
@@ -45,24 +40,20 @@ MAIN
     BCF STATUS,C
     RRF NUM1,1
 
-    ; 🔷 Revisar switch RB7
     BTFSC PORTB,7
     GOTO RESTA
 
-; 🔷 SUMA
 SUMA
     MOVF NUM2,W
-    ADDWF NUM1,W   ; W = NUM1 + NUM2
+    ADDWF NUM1,W   
     MOVWF RESULT
     GOTO MOSTRAR
 
-; 🔷 RESTA
 RESTA
     MOVF NUM2,W
-    SUBWF NUM1,W   ; W = NUM1 - NUM2
+    SUBWF NUM1,W   
     MOVWF RESULT
 
-; 🔷 Mostrar resultado
 MOSTRAR
     MOVF RESULT,W
     MOVWF PORTD
