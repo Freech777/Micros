@@ -6,15 +6,67 @@ __CONFIG  _XT_OSC & _WDT_OFF & _PWRTE_ON & _BODEN_OFF & _LVP_OFF
 
 
 ORG 0x00
+CBLOCK 0x20
+    NUM1    ; RB6-RB4
+    NUM2    ; RB3-RB0
+    RESULT
 
 
-
+ENDC
 CONFIGURACION
-
+; 🔹 Configuración
+BSF STATUS,RP0
+MOVLW b'11111111'
+MOVWF TRISB      ; PORTB entrada
+CLRF TRISD       ; PORTD salida
+BCF STATUS,RP0
 
 MAIN
 
+    ; 🔷 Leer PORTB
+    MOVF PORTB,W
 
+    ; 🔹 Obtener RB3–RB0
+    ANDLW b'00001111'
+    MOVWF NUM2
 
+    ; 🔷 Obtener RB6–RB4
+    MOVF PORTB,W
+    ANDLW b'01110000'
+    MOVWF NUM1
+
+    ; 🔹 Alinear NUM1 (shift derecha 4 veces)
+    BCF STATUS,C
+    RRF NUM1,1
+    BCF STATUS,C
+    RRF NUM1,1
+    BCF STATUS,C
+    RRF NUM1,1
+    BCF STATUS,C
+    RRF NUM1,1
+
+    ; 🔷 Revisar switch RB7
+    BTFSC PORTB,7
+    GOTO RESTA
+
+; 🔷 SUMA
+SUMA
+    MOVF NUM2,W
+    ADDWF NUM1,W   ; W = NUM1 + NUM2
+    MOVWF RESULT
+    GOTO MOSTRAR
+
+; 🔷 RESTA
+RESTA
+    MOVF NUM2,W
+    SUBWF NUM1,W   ; W = NUM1 - NUM2
+    MOVWF RESULT
+
+; 🔷 Mostrar resultado
+MOSTRAR
+    MOVF RESULT,W
+    MOVWF PORTD
+
+    GOTO MAIN
 
 END

@@ -1,4 +1,4 @@
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE  1
+MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -25,168 +25,87 @@ Warning[205]: Found directive in column 1. (__CONFIG)
                       00007 
 Warning[205]: Found directive in column 1. (ORG)
 0000                  00008 ORG 0x00
-Warning[205]: Found directive in column 1. (EQU)
-Error[111]  : Missing symbol
-                      00009 EQU var 0x20
-                      00010 
 Warning[205]: Found directive in column 1. (CBLOCK)
-                      00011 CBLOCK 0x20
-  00000020            00012 VAR ;0x21
-  00000021            00013 VAR2
+                      00009 CBLOCK 0x20
+  00000020            00010     NUM1    ; RB6-RB4
+  00000021            00011     NUM2    ; RB3-RB0
+  00000022            00012     RESULT
+                      00013 
                       00014 
 Warning[205]: Found directive in column 1. (ENDC)
                       00015 ENDC
-                      00016 
-0000                  00017 CONFIGURACION
+0000                  00016 CONFIGURACION
+                      00017 ; 🔹 Configuración
 Warning[203]: Found opcode in column 1. (BSF)
-0000   1683           00018 BSF STATUS, RP0 ;BANCO 1,0
+0000   1683           00018 BSF STATUS,RP0
 Warning[203]: Found opcode in column 1. (MOVLW)
-0001   301F           00019 MOVLW b'00011111' ; 0xf4
+0001   30FF           00019 MOVLW b'11111111'
 Warning[203]: Found opcode in column 1. (MOVWF)
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0002   0086           00020 MOVWF TRISB
-Warning[203]: Found opcode in column 1. (MOVLW)
-0003   3000           00021 MOVLW 0x00 ;b '000000000'
-Warning[203]: Found opcode in column 1. (MOVWF)
+0002   0086           00020 MOVWF TRISB      ; PORTB entrada
+Warning[203]: Found opcode in column 1. (CLRF)
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0004   0087           00022 MOVWF TRISC
+0003   0188           00021 CLRF TRISD       ; PORTD salida
 Warning[203]: Found opcode in column 1. (BCF)
-0005   1283           00023 BCF STATUS, RP0 ; BANCO 0,0
-Warning[203]: Found opcode in column 1. (MOVLW)
-0006   3000           00024 MOVLW 0x00 ;todos los leds apagados
-Warning[203]: Found opcode in column 1. (MOVWF)
-0007   0087           00025 MOVWF PORTC
-                      00026 
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE  2
+0004   1283           00022 BCF STATUS,RP0
+                      00023 
+0005                  00024 MAIN
+                      00025 
+                      00026     ; 🔷 Leer PORTB
+0005   0806           00027     MOVF PORTB,W
+                      00028 
+                      00029     ; 🔹 Obtener RB3–RB0
+0006   390F           00030     ANDLW b'00001111'
+0007   00A1           00031     MOVWF NUM2
+MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-Warning[203]: Found opcode in column 1. (MOVLW)
-0008   3001           00027 MOVLW 0x01 ; Se le asigan valor de la var 2
-Warning[203]: Found opcode in column 1. (MOVWF)
-0009   00A1           00028 MOVWF VAR2
-                      00029 
-                      00030 
-000A                  00031 MAIN
-Warning[203]: Found opcode in column 1. (BTFSC)
-000A   1806           00032 BTFSC   PORTB,0
-Warning[203]: Found opcode in column 1. (GOTO)
-000B   2815           00033 GOTO RB0_SUMA3
-                      00034 
-Warning[203]: Found opcode in column 1. (BTFSC)
-000C   1886           00035 BTFSC   PORTB,1
-Warning[203]: Found opcode in column 1. (GOTO)
-000D   281B           00036 GOTO RB1_RESTA2
+                      00032 
+                      00033     ; 🔷 Obtener RB6–RB4
+0008   0806           00034     MOVF PORTB,W
+0009   3970           00035     ANDLW b'01110000'
+000A   00A0           00036     MOVWF NUM1
                       00037 
-                      00038 
-Warning[203]: Found opcode in column 1. (BTFSC)
-000E   1906           00039 BTFSC   PORTB,2
-Warning[203]: Found opcode in column 1. (GOTO)
-000F   2820           00040 GOTO RB2_OFF
-                      00041 
-                      00042 
-Warning[203]: Found opcode in column 1. (BTFSC)
-0010   1986           00043 BTFSC   PORTB,3
-Warning[203]: Found opcode in column 1. (GOTO)
-0011   2823           00044 GOTO RB3_ON1
-                      00045 
-Warning[203]: Found opcode in column 1. (BTFSC)
-0012   1A06           00046 BTFSC   PORTB,4
-Warning[203]: Found opcode in column 1. (GOTO)
-0013   2828           00047 GOTO RB4_OFF1
-                      00048 
-Warning[203]: Found opcode in column 1. (goto)
-0014   280A           00049 goto MAIN
-                      00050 
-                      00051 ;Suma de 3 en 3 en hexadecimal para pasarlo a binario y mostrarlo en el puerto C
-0015                  00052 RB0_SUMA3
-Warning[203]: Found opcode in column 1. (INCF)
-0015   0AA0           00053 INCF VAR, F
-Warning[203]: Found opcode in column 1. (INCF)
-0016   0AA0           00054 INCF VAR, F
-Warning[203]: Found opcode in column 1. (INCF)
-0017   0AA0           00055 INCF VAR, F
-                      00056 
-Warning[203]: Found opcode in column 1. (MOVF)
-0018   0820           00057 MOVF VAR, W
-Warning[203]: Found opcode in column 1. (MOVWF)
-0019   0087           00058 MOVWF PORTC
-                      00059 
-Warning[203]: Found opcode in column 1. (GOTO)
-001A   280A           00060 GOTO MAIN
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE  3
-
-
-LOC  OBJECT CODE     LINE SOURCE TEXT
-  VALUE
-
-                      00061 
-                      00062 ;Resta lo que haya en el puerto C de 2 en 2
-001B                  00063 RB1_RESTA2
-Warning[203]: Found opcode in column 1. (DECF)
-001B   03A0           00064 DECF VAR, F
-Warning[203]: Found opcode in column 1. (DECF)
-001C   03A0           00065 DECF VAR, F
-                      00066 
-Warning[203]: Found opcode in column 1. (MOVF)
-001D   0820           00067 MOVF VAR, W
-Warning[203]: Found opcode in column 1. (MOVWF)
-001E   0087           00068 MOVWF PORTC
-Warning[203]: Found opcode in column 1. (GOTO)
-001F   280A           00069 GOTO MAIN
-                      00070 
-                      00071 ;Apaga todos los leds de el puerto C
-0020                  00072 RB2_OFF
-Warning[203]: Found opcode in column 1. (MOVLW)
-0020   3000           00073 MOVLW 0x00
-Warning[203]: Found opcode in column 1. (MOVWF)
-0021   0087           00074 MOVWF PORTC
-Warning[203]: Found opcode in column 1. (goto)
-0022   280A           00075 goto MAIN
-                      00076 
-                      00077 ;Enciende led por led en el puerto C
-0023                  00078 RB3_ON1
-Warning[203]: Found opcode in column 1. (MOVF)
-0023   0821           00079 MOVF VAR2,W
-Warning[203]: Found opcode in column 1. (MOVWF)
-0024   0087           00080 MOVWF PORTC
-                      00081 
-                      00082 
-Warning[203]: Found opcode in column 1. (RLF)
-0025   0DA1           00083 RLF VAR2, F
-Warning[203]: Found opcode in column 1. (BSF)
-0026   1421           00084 BSF VAR2, W
-                      00085 
-Warning[203]: Found opcode in column 1. (GOTO)
-0027   280A           00086 GOTO MAIN
-                      00087 
-                      00088 
-                      00089 ;Apaga led por led en el puerto C
-0028                  00090 RB4_OFF1
-Warning[203]: Found opcode in column 1. (MOVF)
-0028   0821           00091 MOVF VAR2, W
-Warning[203]: Found opcode in column 1. (MOVWF)
-0029   0087           00092 MOVWF PORTC
-                      00093 
-                      00094 ;BCF STATUS, C
-                      00095 
-Warning[203]: Found opcode in column 1. (RRF)
-002A   0CA1           00096 RRF VAR2, F
-                      00097 
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE  4
-
-
-LOC  OBJECT CODE     LINE SOURCE TEXT
-  VALUE
-
-                      00098 
-Warning[203]: Found opcode in column 1. (GOTO)
-002B   280A           00099 GOTO MAIN
+                      00038     ; 🔹 Alinear NUM1 (shift derecha 4 veces)
+000B   1003           00039     BCF STATUS,C
+000C   0CA0           00040     RRF NUM1,1
+000D   1003           00041     BCF STATUS,C
+000E   0CA0           00042     RRF NUM1,1
+000F   1003           00043     BCF STATUS,C
+0010   0CA0           00044     RRF NUM1,1
+0011   1003           00045     BCF STATUS,C
+0012   0CA0           00046     RRF NUM1,1
+                      00047 
+                      00048     ; 🔷 Revisar switch RB7
+0013   1B86           00049     BTFSC PORTB,7
+0014   2819           00050     GOTO RESTA
+                      00051 
+                      00052 ; 🔷 SUMA
+0015                  00053 SUMA
+0015   0821           00054     MOVF NUM2,W
+0016   0720           00055     ADDWF NUM1,W   ; W = NUM1 + NUM2
+0017   00A2           00056     MOVWF RESULT
+0018   281C           00057     GOTO MOSTRAR
+                      00058 
+                      00059 ; 🔷 RESTA
+0019                  00060 RESTA
+0019   0821           00061     MOVF NUM2,W
+001A   0220           00062     SUBWF NUM1,W   ; W = NUM1 - NUM2
+001B   00A2           00063     MOVWF RESULT
+                      00064 
+                      00065 ; 🔷 Mostrar resultado
+001C                  00066 MOSTRAR
+001C   0822           00067     MOVF RESULT,W
+001D   0088           00068     MOVWF PORTD
+                      00069 
+001E   2805           00070     GOTO MAIN
+                      00071 
 Warning[205]: Found directive in column 1. (END)
-                      00100 END
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE  5
+                      00072 END
+MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  3
 
 
 SYMBOL TABLE
@@ -245,7 +164,7 @@ CHS1                              00000004
 CHS2                              00000005
 CIS                               00000003
 CKE                               00000006
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE  6
+MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  4
 
 
 SYMBOL TABLE
@@ -303,13 +222,14 @@ INTE                              00000004
 INTEDG                            00000006
 INTF                              00000001
 IRP                               00000007
-MAIN                              0000000A
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE  7
+MAIN                              00000005
+MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  5
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+MOSTRAR                           0000001C
 NOT_A                             00000005
 NOT_ADDRESS                       00000005
 NOT_BO                            00000000
@@ -324,6 +244,8 @@ NOT_TO                            00000004
 NOT_TX8                           00000006
 NOT_W                             00000002
 NOT_WRITE                         00000002
+NUM1                              00000020
+NUM2                              00000021
 OBF                               00000006
 OERR                              00000001
 OPTION_REG                        00000081
@@ -360,23 +282,18 @@ RA1                               00000001
 RA2                               00000002
 RA3                               00000003
 RA4                               00000004
-RA5                               00000005
-RB0                               00000000
-RB0_SUMA3                         00000015
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE  8
+MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  6
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+RA5                               00000005
+RB0                               00000000
 RB1                               00000001
-RB1_RESTA2                        0000001B
 RB2                               00000002
-RB2_OFF                           00000020
 RB3                               00000003
-RB3_ON1                           00000023
 RB4                               00000004
-RB4_OFF1                          00000028
 RB5                               00000005
 RB6                               00000006
 RB7                               00000007
@@ -411,6 +328,8 @@ RE0                               00000000
 RE1                               00000001
 RE2                               00000002
 READ_WRITE                        00000002
+RESTA                             00000019
+RESULT                            00000022
 RP0                               00000005
 RP1                               00000006
 RSEN                              00000001
@@ -422,7 +341,7 @@ S                                 00000003
 SEN                               00000000
 SMP                               00000007
 SPBRG                             00000099
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE  9
+MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  7
 
 
 SYMBOL TABLE
@@ -444,6 +363,7 @@ SSPM3                             00000003
 SSPOV                             00000006
 SSPSTAT                           00000094
 STATUS                            00000003
+SUMA                              00000015
 SYNC                              00000004
 T0CS                              00000005
 T0IE                              00000005
@@ -480,13 +400,13 @@ TRISA0                            00000000
 TRISA1                            00000001
 TRISA2                            00000002
 TRISA3                            00000003
-TRISA4                            00000004
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE 10
+MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  8
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+TRISA4                            00000004
 TRISA5                            00000005
 TRISB                             00000086
 TRISB0                            00000000
@@ -530,8 +450,6 @@ TXIF                              00000004
 TXREG                             00000019
 TXSTA                             00000098
 UA                                00000001
-VAR                               00000020
-VAR2                              00000021
 W                                 00000000
 WCOL                              00000007
 WR                                00000001
@@ -540,13 +458,13 @@ WRERR                             00000003
 Z                                 00000002
 _BODEN_OFF                        00003FBF
 _BODEN_ON                         00003FFF
-MPASM  5.39                    SUMA_RESTA.ASM   4-19-2026  23:54:12         PAGE 11
+_CONFIG                           00002007
+MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  9
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-_CONFIG                           00002007
 _CPD_OFF                          00003FFF
 _CPD_ON                           00003EFF
 _CP_ALL                           00001FFF
@@ -577,17 +495,17 @@ __16F877A                         00000001
 
 MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
 
-0000 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXX---- ----------------
+0000 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXX- ---------------- ----------------
 2000 : -------X-------- ---------------- ---------------- ----------------
 
 All other memory blocks unused.
 
-Program Memory Words Used:    44
-Program Memory Words Free:  8148
+Program Memory Words Used:    31
+Program Memory Words Free:  8161
 
 
-Errors   :     1
-Warnings :    52 reported,     0 suppressed
+Errors   :     0
+Warnings :    12 reported,     0 suppressed
 Messages :     2 reported,     0 suppressed
 
 
