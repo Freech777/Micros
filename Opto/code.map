@@ -1,11 +1,11 @@
 MPLINK 4.38, Linker
-Linker Map File - Created Mon May 04 01:36:55 2026
+Linker Map File - Created Mon May 04 15:26:03 2026
 
                                  Section Info
                   Section       Type    Address   Location Size(Bytes)
                 ---------  ---------  ---------  ---------  ---------
                    .org_0       code   0x000000    program   0x000000
-                   .org_1       code   0x000000    program   0x000040
+                   .org_1       code   0x000000    program   0x00003a
       .config_2007_CODE.O       code   0x002007    program   0x000002
 
 
@@ -13,28 +13,26 @@ Linker Map File - Created Mon May 04 01:36:55 2026
                               Program Memory Usage 
                                Start         End      
                            ---------   ---------      
-                            0x000000    0x00001f      
+                            0x000000    0x00001c      
                             0x002007    0x002007      
-            33 out of 8454 program addresses used, program memory utilization is 0%
+            30 out of 8454 program addresses used, program memory utilization is 0%
 
 
 
                               Symbols - Sorted by Name
                      Name    Address   Location    Storage File                     
                 ---------  ---------  ---------  --------- ---------                
-                       D1   0x00001b    program     static C:\Users\freem\Desktop\Micros_woo\Opto\code.asm
-                DELAY_ADC   0x000019    program     static C:\Users\freem\Desktop\Micros_woo\Opto\code.asm
-                     MAIN   0x000012    program     static C:\Users\freem\Desktop\Micros_woo\Opto\code.asm
-                 WAIT_ADC   0x000014    program     static C:\Users\freem\Desktop\Micros_woo\Opto\code.asm
+                     MAIN   0x000017    program     static C:\Users\freem\Escritorio\Micros\Opto\code.asm
+                     STAB   0x000014    program     static C:\Users\freem\Escritorio\Micros\Opto\code.asm
+                     WAIT   0x000018    program     static C:\Users\freem\Escritorio\Micros\Opto\code.asm
 
 
 
                               Symbols - Sorted by Address
                      Name    Address   Location    Storage File                     
                 ---------  ---------  ---------  --------- ---------                
-                     MAIN   0x000012    program     static C:\Users\freem\Desktop\Micros_woo\Opto\code.asm
-                 WAIT_ADC   0x000014    program     static C:\Users\freem\Desktop\Micros_woo\Opto\code.asm
-                DELAY_ADC   0x000019    program     static C:\Users\freem\Desktop\Micros_woo\Opto\code.asm
-                       D1   0x00001b    program     static C:\Users\freem\Desktop\Micros_woo\Opto\code.asm
+                     STAB   0x000014    program     static C:\Users\freem\Escritorio\Micros\Opto\code.asm
+                     MAIN   0x000017    program     static C:\Users\freem\Escritorio\Micros\Opto\code.asm
+                     WAIT   0x000018    program     static C:\Users\freem\Escritorio\Micros\Opto\code.asm
 
 

@@ -1,4 +1,4 @@
-MPASM  5.39                          CODE.ASM   5-4-2026  1:36:54         PAGE  1
+MPASM  5.39                          CODE.ASM   5-4-2026  15:26:02         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -19,7 +19,7 @@ Warning[205]: Found directive in column 1. (INCLUDE)
                       00555         LIST
                       00003 
 Warning[205]: Found directive in column 1. (__CONFIG)
-2007   3F31           00004 __CONFIG  _XT_OSC & _WDT_OFF & _PWRTE_ON & _BODEN_OFF & _LVP_OFF
+2007   3F31           00004 __CONFIG _XT_OSC & _WDT_OFF & _PWRTE_ON & _BODEN_OFF & _LVP_OFF
                       00005 
 Warning[205]: Found directive in column 1. (ORG)
 0000                  00006 ORG 0x00
@@ -30,125 +30,82 @@ Warning[205]: Found directive in column 1. (CBLOCK)
 Warning[205]: Found directive in column 1. (ENDC)
                       00010 ENDC
                       00011 
-                      00012 ;========================
-                      00013 ; CONFIGURACIÓN INICIAL
-                      00014 ;========================
-                      00015 
 Warning[203]: Found opcode in column 1. (BSF)
-0000   1683           00016 BSF STATUS, RP0        ; Banco 1
-                      00017 
-                      00018 ; RA0 entrada (audio)
+0000   1683           00012 BSF STATUS, RP0
+Warning[203]: Found opcode in column 1. (CLRF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0001   0187           00013 CLRF TRISC
 Warning[203]: Found opcode in column 1. (MOVLW)
-0001   3001           00019 MOVLW b'00000001'
+0002   3001           00014 MOVLW b'00000001'
 Warning[203]: Found opcode in column 1. (MOVWF)
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0002   0085           00020 MOVWF TRISA
+0003   0085           00015 MOVWF TRISA
+Warning[203]: Found opcode in column 1. (MOVLW)
+0004   3080           00016 MOVLW b'10000000'
+Warning[203]: Found opcode in column 1. (MOVWF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0005   009F           00017 MOVWF ADCON1
+Warning[203]: Found opcode in column 1. (MOVLW)
+0006   3019           00018 MOVLW .25
+Warning[203]: Found opcode in column 1. (MOVWF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0007   0092           00019 MOVWF PR2
+Warning[203]: Found opcode in column 1. (BCF)
+0008   1283           00020 BCF STATUS, RP0
                       00021 
-                      00022 ; RC2 salida (PWM)
-Warning[203]: Found opcode in column 1. (BCF)
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0003   1107           00023 BCF TRISC, 2
-                      00024 
-                      00025 ; ADCON1: AN0 analógico, resto digital
+Warning[203]: Found opcode in column 1. (CLRF)
+0009   0187           00022 CLRF PORTC
+                      00023 
 Warning[203]: Found opcode in column 1. (MOVLW)
-0004   3080           00026 MOVLW b'10000000'
-Warning[203]: Found opcode in column 1. (MOVWF)
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0005   009F           00027 MOVWF ADCON1
-                      00028 
-                      00029 ; Frecuencia PWM (~2–5 kHz con tu config actual)
-MPASM  5.39                          CODE.ASM   5-4-2026  1:36:54         PAGE  2
+MPASM  5.39                          CODE.ASM   5-4-2026  15:26:02         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-Warning[203]: Found opcode in column 1. (MOVLW)
-0006   307C           00030 MOVLW .124
+000A   3004           00024 MOVLW b'00000100'
 Warning[203]: Found opcode in column 1. (MOVWF)
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0007   0092           00031 MOVWF PR2
+000B   0092           00025 MOVWF T2CON
+                      00026 
+Warning[203]: Found opcode in column 1. (MOVLW)
+000C   300C           00027 MOVLW b'00001100'
+Warning[203]: Found opcode in column 1. (MOVWF)
+000D   0097           00028 MOVWF CCP1CON
+                      00029 
+Warning[203]: Found opcode in column 1. (MOVLW)
+000E   300D           00030 MOVLW .13
+Warning[203]: Found opcode in column 1. (MOVWF)
+000F   0095           00031 MOVWF CCPR1L
                       00032 
-Warning[203]: Found opcode in column 1. (BCF)
-0008   1283           00033 BCF STATUS, RP0        ; Banco 0
-                      00034 
-                      00035 ;========================
-                      00036 ; CONFIG ADC
-                      00037 ;========================
-                      00038 
 Warning[203]: Found opcode in column 1. (MOVLW)
-0009   3081           00039 MOVLW b'10000001'      ; ADC ON, canal AN0
+0010   3041           00033 MOVLW b'01000001'
 Warning[203]: Found opcode in column 1. (MOVWF)
-000A   009F           00040 MOVWF ADCON0
-                      00041 
-                      00042 ;========================
-                      00043 ; CONFIG PWM
-                      00044 ;========================
-                      00045 
+0011   009F           00034 MOVWF ADCON0
+                      00035 
 Warning[203]: Found opcode in column 1. (MOVLW)
-000B   300C           00046 MOVLW b'00001100'      ; CCP1 en modo PWM
+0012   3032           00036 MOVLW .50
 Warning[203]: Found opcode in column 1. (MOVWF)
-000C   0097           00047 MOVWF CCP1CON
+0013   00A0           00037 MOVWF TEMP
+0014                  00038 STAB:
+0014   0000           00039     NOP
+0015   0BA0           00040     DECFSZ TEMP,F
+0016   2814           00041     GOTO STAB
+                      00042 
+0017                  00043 MAIN:
+0017   151F           00044     BSF ADCON0, GO_DONE
+0018                  00045 WAIT:
+0018   191F           00046     BTFSC ADCON0, GO_DONE
+0019   2818           00047     GOTO WAIT
                       00048 
-Warning[203]: Found opcode in column 1. (MOVLW)
-000D   303E           00049 MOVLW .62              ; Duty inicial (~50%)
-Warning[203]: Found opcode in column 1. (MOVWF)
-000E   0095           00050 MOVWF CCPR1L
-                      00051 
-                      00052 ; Timer2 ON, prescaler 1:4
-Warning[203]: Found opcode in column 1. (MOVLW)
-000F   3005           00053 MOVLW b'00000101'
-Warning[203]: Found opcode in column 1. (MOVWF)
-0010   0092           00054 MOVWF T2CON
-                      00055 
-Warning[203]: Found opcode in column 1. (CALL)
-0011   2019           00056 CALL DELAY_ADC         ; estabilización
-                      00057 
-                      00058 ;========================
-                      00059 ; LOOP PRINCIPAL
-                      00060 ;========================
-                      00061 
-0012                  00062 MAIN:
-                      00063 
-0012   2019           00064     CALL DELAY_ADC     ; tiempo de adquisición
-                      00065 
-0013   151F           00066     BSF ADCON0, GO     ; iniciar conversión
-                      00067 
-0014                  00068 WAIT_ADC:
-0014   191F           00069     BTFSC ADCON0, GO
-MPASM  5.39                          CODE.ASM   5-4-2026  1:36:54         PAGE  3
-
-
-LOC  OBJECT CODE     LINE SOURCE TEXT
-  VALUE
-
-0015   2814           00070     GOTO WAIT_ADC
-                      00071 
-                      00072     ; Leer audio
-0016   081E           00073     MOVF ADRESH, W
-                      00074 
-                      00075     ; Enviar a PWM (modulación)
-0017   0095           00076     MOVWF CCPR1L
-                      00077 
-0018   2812           00078     GOTO MAIN
-                      00079 
-                      00080 ;========================
-                      00081 ; DELAY ADC (~estable)
-                      00082 ;========================
-                      00083 
-0019                  00084 DELAY_ADC:
-0019   3032           00085     MOVLW .50
-001A   00A0           00086     MOVWF TEMP
-001B                  00087 D1:
-001B   0000           00088     NOP
-001C   0000           00089     NOP
-001D   0BA0           00090     DECFSZ TEMP, F
-001E   281B           00091     GOTO D1
-001F   0008           00092     RETURN
-                      00093 
+                      00049     ; ADC directo a duty — sin lógica, sin umbral
+001A   081E           00050     MOVF ADRESH, W
+001B   0095           00051     MOVWF CCPR1L
+                      00052 
+001C   2817           00053     GOTO MAIN
+                      00054 
 Warning[205]: Found directive in column 1. (END)
-                      00094 END
-MPASM  5.39                          CODE.ASM   5-4-2026  1:36:54         PAGE  4
+                      00055 END
+MPASM  5.39                          CODE.ASM   5-4-2026  15:26:02         PAGE  3
 
 
 SYMBOL TABLE
@@ -207,7 +164,7 @@ CHS1                              00000004
 CHS2                              00000005
 CIS                               00000003
 CKE                               00000006
-MPASM  5.39                          CODE.ASM   5-4-2026  1:36:54         PAGE  5
+MPASM  5.39                          CODE.ASM   5-4-2026  15:26:02         PAGE  4
 
 
 SYMBOL TABLE
@@ -231,10 +188,8 @@ CVREN                             00000007
 CVROE                             00000006
 CVRR                              00000005
 D                                 00000005
-D1                                0000001B
 DATA_ADDRESS                      00000005
 DC                                00000001
-DELAY_ADC                         00000019
 D_A                               00000005
 D_NOT_A                           00000005
 EEADR                             0000010D
@@ -266,14 +221,14 @@ INTE                              00000004
 INTEDG                            00000006
 INTF                              00000001
 IRP                               00000007
-MPASM  5.39                          CODE.ASM   5-4-2026  1:36:54         PAGE  6
+MAIN                              00000017
+NOT_A                             00000005
+MPASM  5.39                          CODE.ASM   5-4-2026  15:26:02         PAGE  5
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-MAIN                              00000012
-NOT_A                             00000005
 NOT_ADDRESS                       00000005
 NOT_BO                            00000000
 NOT_BOR                           00000000
@@ -325,14 +280,14 @@ RA3                               00000003
 RA4                               00000004
 RA5                               00000005
 RB0                               00000000
-MPASM  5.39                          CODE.ASM   5-4-2026  1:36:54         PAGE  7
+RB1                               00000001
+RB2                               00000002
+MPASM  5.39                          CODE.ASM   5-4-2026  15:26:02         PAGE  6
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-RB1                               00000001
-RB2                               00000002
 RB3                               00000003
 RB4                               00000004
 RB5                               00000005
@@ -384,14 +339,14 @@ SPEN                              00000007
 SREN                              00000005
 SSPADD                            00000093
 SSPBUF                            00000013
-MPASM  5.39                          CODE.ASM   5-4-2026  1:36:54         PAGE  8
+SSPCON                            00000014
+SSPCON2                           00000091
+MPASM  5.39                          CODE.ASM   5-4-2026  15:26:02         PAGE  7
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-SSPCON                            00000014
-SSPCON2                           00000091
 SSPEN                             00000005
 SSPIE                             00000003
 SSPIF                             00000003
@@ -401,6 +356,7 @@ SSPM2                             00000002
 SSPM3                             00000003
 SSPOV                             00000006
 SSPSTAT                           00000094
+STAB                              00000014
 STATUS                            00000003
 SYNC                              00000004
 T0CS                              00000005
@@ -443,13 +399,13 @@ TRISA4                            00000004
 TRISA5                            00000005
 TRISB                             00000086
 TRISB0                            00000000
-MPASM  5.39                          CODE.ASM   5-4-2026  1:36:54         PAGE  9
+TRISB1                            00000001
+MPASM  5.39                          CODE.ASM   5-4-2026  15:26:02         PAGE  8
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-TRISB1                            00000001
 TRISB2                            00000002
 TRISB3                            00000003
 TRISB4                            00000004
@@ -490,7 +446,7 @@ TXREG                             00000019
 TXSTA                             00000098
 UA                                00000001
 W                                 00000000
-WAIT_ADC                          00000014
+WAIT                              00000018
 WCOL                              00000007
 WR                                00000001
 WREN                              00000002
@@ -502,13 +458,13 @@ _CONFIG                           00002007
 _CPD_OFF                          00003FFF
 _CPD_ON                           00003EFF
 _CP_ALL                           00001FFF
-MPASM  5.39                          CODE.ASM   5-4-2026  1:36:54         PAGE 10
+_CP_OFF                           00003FFF
+MPASM  5.39                          CODE.ASM   5-4-2026  15:26:02         PAGE  9
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-_CP_OFF                           00003FFF
 _DEBUG_OFF                        00003FFF
 _DEBUG_ON                         000037FF
 _DEVID1                           00002006
@@ -535,17 +491,17 @@ __16F877A                         00000001
 
 MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
 
-0000 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX ---------------- ----------------
+0000 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXX--- ---------------- ----------------
 2000 : -------X-------- ---------------- ---------------- ----------------
 
 All other memory blocks unused.
 
-Program Memory Words Used:    32
-Program Memory Words Free:  8160
+Program Memory Words Used:    29
+Program Memory Words Free:  8163
 
 
 Errors   :     0
-Warnings :    25 reported,     0 suppressed
+Warnings :    27 reported,     0 suppressed
 Messages :     4 reported,     0 suppressed
 
 
