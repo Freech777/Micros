@@ -1,0 +1,9 @@
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P2\P2.ASM 1 : Found directive in column 1. (LIST)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P2\P2.ASM 2 : Found directive in column 1. (INCLUDE)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P2\P2.ASM 4 : Found directive in column 1. (__CONFIG)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P2\P2.ASM 8 : Found directive in column 1. (ORG)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P2\P2.ASM 12 : Found directive in column 1. (CBLOCK)
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P2\P2.ASM 22 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P2\P2.ASM 24 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P2\P2.ASM 28 : Found opcode in column 1. (goto)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P2\P2.ASM 60 : Found opcode in column 1. (goto)
