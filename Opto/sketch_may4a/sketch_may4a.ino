@@ -1,42 +1,34 @@
 #define PIN_AUDIO  34
 #define PIN_IR     25
-#define LEDC_FREQ  38000
 #define LEDC_RES   8
-#define DUTY_50    128
+#define SAMPLE_US  100   // 10kHz muestreo
 
 void setup() {
   Serial.begin(115200);
   analogReadResolution(12);
   analogSetAttenuation(ADC_11db);
-  ledcAttach(PIN_IR, LEDC_FREQ, LEDC_RES);
-  ledcWrite(PIN_IR, 0);
-  delay(100);
+  ledcAttach(PIN_IR, 20000, 8);
+  ledcWrite(PIN_IR, 128);
+  delay(500);
 }
 
 void loop() {
-  int audio = analogRead(PIN_AUDIO);
+  unsigned long t = micros();
 
-  // Calcular promedio dinámico como punto de referencia (DC offset)
+  int audio = (analogRead(PIN_AUDIO) + analogRead(PIN_AUDIO) +
+               analogRead(PIN_AUDIO) + analogRead(PIN_AUDIO)) / 4;
+
   static long promedio = 0;
-  promedio = (promedio * 15 + audio) / 16;  // filtro IIR suave
+  if (promedio == 0) promedio = (long)audio << 9;
+  promedio = promedio - (promedio >> 9) + audio;
+  int dc = (int)(promedio >> 9);
 
-  int diferencia = audio - promedio;  // señal AC pura, centrada en 0
+  int diff = audio - dc;
+  if (abs(diff) < 3) diff = 0;
 
-  // Umbral: detectar cuando hay señal significativa
-  if (abs(diferencia) > 10) {       // ajusta este valor según tu señal
-    ledcWrite(PIN_IR, DUTY_50);     // IR ON
-  } else {
-    ledcWrite(PIN_IR, 0);           // IR OFF
-  }
+  int duty = constrain(128 + diff / 6, 0, 255);
+  ledcWrite(PIN_IR, duty);
 
-  static unsigned long ultimo = 0;
-  if (millis() - ultimo > 10) {
-    Serial.print("ADC: ");
-    Serial.print(audio);
-    Serial.print("  Prom: ");
-    Serial.print(promedio);
-    Serial.print("  Diff: ");
-    Serial.println(diferencia);
-    ultimo = millis();
-  }
+  // Esperar resto del periodo de muestreo
+  while (micros() - t < SAMPLE_US);
 }
