@@ -1,0 +1,23 @@
+# --- Proteus ---
+# Ignorar carpetas de respaldos y archivos autoguardados
+*Project Backups*/
+*Autosaved*
+*.workspace
+
+# Ignorar archivos de respaldo con formato de fecha (Simplificado sin corchetes)
+*202*.pdsprj
+
+# --- Compilación y Temporales ---
+# Si usas Arduino/C++, ignora las carpetas de compilación
+build/
+bin/
+obj/
+
+# --- Editores y Sistema ---
+.vscode/
+.DS_Store
+*.tmp
+
+# --- Archivos basura de ASM ---
+*.err
+*.mcs

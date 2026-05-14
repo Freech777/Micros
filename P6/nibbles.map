@@ -1,11 +1,11 @@
 MPLINK 4.38, Linker
-Linker Map File - Created Mon Apr 20 03:35:58 2026
+Linker Map File - Created Thu May 14 11:02:39 2026
 
                                  Section Info
                   Section       Type    Address   Location Size(Bytes)
                 ---------  ---------  ---------  ---------  ---------
                    .org_0       code   0x000000    program   0x000000
-                   .org_1       code   0x000000    program   0x00003e
+                   .org_1       code   0x000000    program   0x000054
    .config_2007_NIBBLES.O       code   0x002007    program   0x000002
 
 
@@ -13,9 +13,9 @@ Linker Map File - Created Mon Apr 20 03:35:58 2026
                               Program Memory Usage 
                                Start         End      
                            ---------   ---------      
-                            0x000000    0x00001e      
+                            0x000000    0x000029      
                             0x002007    0x002007      
-            32 out of 8454 program addresses used, program memory utilization is 0%
+            43 out of 8454 program addresses used, program memory utilization is 0%
 
 
 
@@ -23,6 +23,9 @@ Linker Map File - Created Mon Apr 20 03:35:58 2026
                      Name    Address   Location    Storage File                     
                 ---------  ---------  ---------  --------- ---------                
             CONFIGURACION   0x000000    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
+                    DELAY   0x000020    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
+                 LOOP_EXT   0x000022    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
+                 LOOP_INT   0x000024    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
                      MAIN   0x000005    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
                   MOSTRAR   0x00001c    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
                     RESTA   0x000019    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
@@ -38,5 +41,8 @@ Linker Map File - Created Mon Apr 20 03:35:58 2026
                      SUMA   0x000015    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
                     RESTA   0x000019    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
                   MOSTRAR   0x00001c    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
+                    DELAY   0x000020    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
+                 LOOP_EXT   0x000022    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
+                 LOOP_INT   0x000024    program     static C:\Users\freem\Desktop\Micros_woo\P6\nibbles.asm
 
 
