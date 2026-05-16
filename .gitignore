@@ -1,7 +1,4 @@
-.err
-.mcs
-
-
 *.workspace
 Project Backups/
 Opto/IR/
+# (Reglas que venían de GitHub)

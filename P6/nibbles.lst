@@ -1,4 +1,4 @@
-MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  1
+MPASM  5.39                       NIBBLES.ASM   5-14-2026  11:02:38         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -21,91 +21,95 @@ Warning[205]: Found directive in column 1. (INCLUDE)
 Warning[205]: Found directive in column 1. (__CONFIG)
 2007   3F31           00004 __CONFIG  _XT_OSC & _WDT_OFF & _PWRTE_ON & _BODEN_OFF & _LVP_OFF
                       00005 
-                      00006 
-                      00007 
 Warning[205]: Found directive in column 1. (ORG)
-0000                  00008 ORG 0x00
+0000                  00006 ORG 0x00
+                      00007 
 Warning[205]: Found directive in column 1. (CBLOCK)
-                      00009 CBLOCK 0x20
-  00000020            00010     NUM1    ; RB6-RB4
-  00000021            00011     NUM2    ; RB3-RB0
-  00000022            00012     RESULT
-                      00013 
-                      00014 
+                      00008 CBLOCK 0x20
+  00000020            00009     NUM1
+  00000021            00010     NUM2
+  00000022            00011     RESULT
+  00000023            00012     DELAY1      ; contador externo del retardo
+  00000024            00013     DELAY2      ; contador interno del retardo
 Warning[205]: Found directive in column 1. (ENDC)
-                      00015 ENDC
+                      00014 ENDC
+                      00015 
 0000                  00016 CONFIGURACION
-                      00017 ; 🔹 Configuración
-Warning[203]: Found opcode in column 1. (BSF)
-0000   1683           00018 BSF STATUS,RP0
-Warning[203]: Found opcode in column 1. (MOVLW)
-0001   30FF           00019 MOVLW b'11111111'
-Warning[203]: Found opcode in column 1. (MOVWF)
+0000   1683           00017     BSF STATUS,RP0
+0001   30FF           00018     MOVLW b'11111111'
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0002   0086           00020 MOVWF TRISB      ; PORTB entrada
-Warning[203]: Found opcode in column 1. (CLRF)
+0002   0086           00019     MOVWF TRISB
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0003   0188           00021 CLRF TRISD       ; PORTD salida
-Warning[203]: Found opcode in column 1. (BCF)
-0004   1283           00022 BCF STATUS,RP0
-                      00023 
-0005                  00024 MAIN
-                      00025 
-                      00026     ; 🔷 Leer PORTB
-0005   0806           00027     MOVF PORTB,W
-                      00028 
-                      00029     ; 🔹 Obtener RB3–RB0
-0006   390F           00030     ANDLW b'00001111'
-0007   00A1           00031     MOVWF NUM2
-MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  2
+0003   0188           00020     CLRF TRISD
+0004   1283           00021     BCF STATUS,RP0
+                      00022 
+0005                  00023 MAIN
+0005   0806           00024     MOVF PORTB,W
+0006   390F           00025     ANDLW b'00001111'
+0007   00A1           00026     MOVWF NUM2
+                      00027 
+0008   0806           00028     MOVF PORTB,W
+0009   3970           00029     ANDLW b'01110000'
+000A   00A0           00030     MOVWF NUM1
+                      00031 
+000B   1003           00032     BCF STATUS,C
+000C   0CA0           00033     RRF NUM1,1
+000D   1003           00034     BCF STATUS,C
+000E   0CA0           00035     RRF NUM1,1
+000F   1003           00036     BCF STATUS,C
+MPASM  5.39                       NIBBLES.ASM   5-14-2026  11:02:38         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                      00032 
-                      00033     ; 🔷 Obtener RB6–RB4
-0008   0806           00034     MOVF PORTB,W
-0009   3970           00035     ANDLW b'01110000'
-000A   00A0           00036     MOVWF NUM1
-                      00037 
-                      00038     ; 🔹 Alinear NUM1 (shift derecha 4 veces)
-000B   1003           00039     BCF STATUS,C
-000C   0CA0           00040     RRF NUM1,1
-000D   1003           00041     BCF STATUS,C
-000E   0CA0           00042     RRF NUM1,1
-000F   1003           00043     BCF STATUS,C
-0010   0CA0           00044     RRF NUM1,1
-0011   1003           00045     BCF STATUS,C
-0012   0CA0           00046     RRF NUM1,1
-                      00047 
-                      00048     ; 🔷 Revisar switch RB7
-0013   1B86           00049     BTFSC PORTB,7
-0014   2819           00050     GOTO RESTA
-                      00051 
-                      00052 ; 🔷 SUMA
-0015                  00053 SUMA
-0015   0821           00054     MOVF NUM2,W
-0016   0720           00055     ADDWF NUM1,W   ; W = NUM1 + NUM2
-0017   00A2           00056     MOVWF RESULT
-0018   281C           00057     GOTO MOSTRAR
+0010   0CA0           00037     RRF NUM1,1
+0011   1003           00038     BCF STATUS,C
+0012   0CA0           00039     RRF NUM1,1
+                      00040 
+0013   1B86           00041     BTFSC PORTB,7
+0014   2819           00042     GOTO RESTA
+                      00043 
+0015                  00044 SUMA
+0015   0821           00045     MOVF NUM2,W
+0016   0720           00046     ADDWF NUM1,W
+0017   00A2           00047     MOVWF RESULT
+0018   281C           00048     GOTO MOSTRAR
+                      00049 
+0019                  00050 RESTA
+0019   0821           00051     MOVF NUM2,W
+001A   0220           00052     SUBWF NUM1,W
+001B   00A2           00053     MOVWF RESULT
+                      00054 
+001C                  00055 MOSTRAR
+001C   0822           00056     MOVF RESULT,W
+001D   0088           00057     MOVWF PORTD
                       00058 
-                      00059 ; 🔷 RESTA
-0019                  00060 RESTA
-0019   0821           00061     MOVF NUM2,W
-001A   0220           00062     SUBWF NUM1,W   ; W = NUM1 - NUM2
-001B   00A2           00063     MOVWF RESULT
-                      00064 
-                      00065 ; 🔷 Mostrar resultado
-001C                  00066 MOSTRAR
-001C   0822           00067     MOVF RESULT,W
-001D   0088           00068     MOVWF PORTD
-                      00069 
-001E   2805           00070     GOTO MAIN
-                      00071 
+001E   2020           00059     CALL DELAY          ; <-- retardo antes de volver a leer
+                      00060 
+001F   2805           00061     GOTO MAIN
+                      00062 
+                      00063 ; -------------------------------------------------------
+                      00064 ; Subrutina DELAY — aprox. 50 ms con cristal de 4 MHz
+                      00065 ; DELAY1 = 200, DELAY2 = 250 → 200 × 250 × 1 µs ≈ 50 ms
+                      00066 ; -------------------------------------------------------
+0020                  00067 DELAY
+0020   30C8           00068     MOVLW D'200'
+0021   00A3           00069     MOVWF DELAY1
+0022                  00070 LOOP_EXT
+0022   30FA           00071     MOVLW D'250'
+0023   00A4           00072     MOVWF DELAY2
+0024                  00073 LOOP_INT
+0024   0000           00074     NOP
+0025   0BA4           00075     DECFSZ DELAY2,1
+0026   2824           00076     GOTO LOOP_INT
+0027   0BA3           00077     DECFSZ DELAY1,1
+0028   2822           00078     GOTO LOOP_EXT
+0029   0008           00079     RETURN
+                      00080 
 Warning[205]: Found directive in column 1. (END)
-                      00072 END
-MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  3
+                      00081 END
+MPASM  5.39                       NIBBLES.ASM   5-14-2026  11:02:38         PAGE  3
 
 
 SYMBOL TABLE
@@ -164,7 +168,7 @@ CHS1                              00000004
 CHS2                              00000005
 CIS                               00000003
 CKE                               00000006
-MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  4
+MPASM  5.39                       NIBBLES.ASM   5-14-2026  11:02:38         PAGE  4
 
 
 SYMBOL TABLE
@@ -191,6 +195,9 @@ CVRR                              00000005
 D                                 00000005
 DATA_ADDRESS                      00000005
 DC                                00000001
+DELAY                             00000020
+DELAY1                            00000023
+DELAY2                            00000024
 D_A                               00000005
 D_NOT_A                           00000005
 EEADR                             0000010D
@@ -220,15 +227,17 @@ INDF                              00000000
 INTCON                            0000000B
 INTE                              00000004
 INTEDG                            00000006
-INTF                              00000001
-IRP                               00000007
-MAIN                              00000005
-MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  5
+MPASM  5.39                       NIBBLES.ASM   5-14-2026  11:02:38         PAGE  5
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+INTF                              00000001
+IRP                               00000007
+LOOP_EXT                          00000022
+LOOP_INT                          00000024
+MAIN                              00000005
 MOSTRAR                           0000001C
 NOT_A                             00000005
 NOT_ADDRESS                       00000005
@@ -277,17 +286,17 @@ PSPIE                             00000007
 PSPIF                             00000007
 PSPMODE                           00000004
 R                                 00000002
-RA0                               00000000
-RA1                               00000001
-RA2                               00000002
-RA3                               00000003
-RA4                               00000004
-MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  6
+MPASM  5.39                       NIBBLES.ASM   5-14-2026  11:02:38         PAGE  6
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
 RA5                               00000005
 RB0                               00000000
 RB1                               00000001
@@ -336,17 +345,17 @@ RSEN                              00000001
 RX9                               00000006
 RX9D                              00000000
 R_NOT_W                           00000002
-R_W                               00000002
-S                                 00000003
-SEN                               00000000
-SMP                               00000007
-SPBRG                             00000099
-MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  7
+MPASM  5.39                       NIBBLES.ASM   5-14-2026  11:02:38         PAGE  7
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+R_W                               00000002
+S                                 00000003
+SEN                               00000000
+SMP                               00000007
+SPBRG                             00000099
 SPEN                              00000007
 SREN                              00000005
 SSPADD                            00000093
@@ -395,17 +404,17 @@ TOUTPS0                           00000003
 TOUTPS1                           00000004
 TOUTPS2                           00000005
 TOUTPS3                           00000006
-TRISA                             00000085
-TRISA0                            00000000
-TRISA1                            00000001
-TRISA2                            00000002
-TRISA3                            00000003
-MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  8
+MPASM  5.39                       NIBBLES.ASM   5-14-2026  11:02:38         PAGE  8
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
 TRISA4                            00000004
 TRISA5                            00000005
 TRISB                             00000086
@@ -454,17 +463,17 @@ W                                 00000000
 WCOL                              00000007
 WR                                00000001
 WREN                              00000002
-WRERR                             00000003
-Z                                 00000002
-_BODEN_OFF                        00003FBF
-_BODEN_ON                         00003FFF
-_CONFIG                           00002007
-MPASM  5.39                       NIBBLES.ASM   4-20-2026  3:35:57         PAGE  9
+MPASM  5.39                       NIBBLES.ASM   5-14-2026  11:02:38         PAGE  9
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+WRERR                             00000003
+Z                                 00000002
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_CONFIG                           00002007
 _CPD_OFF                          00003FFF
 _CPD_ON                           00003EFF
 _CP_ALL                           00001FFF
@@ -495,17 +504,17 @@ __16F877A                         00000001
 
 MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
 
-0000 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXX- ---------------- ----------------
+0000 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXX------ ----------------
 2000 : -------X-------- ---------------- ---------------- ----------------
 
 All other memory blocks unused.
 
-Program Memory Words Used:    31
-Program Memory Words Free:  8161
+Program Memory Words Used:    42
+Program Memory Words Free:  8150
 
 
 Errors   :     0
-Warnings :    12 reported,     0 suppressed
+Warnings :     7 reported,     0 suppressed
 Messages :     2 reported,     0 suppressed
 
 

@@ -3,27 +3,25 @@ INCLUDE <p16F877A.inc>
 
 __CONFIG  _XT_OSC & _WDT_OFF & _PWRTE_ON & _BODEN_OFF & _LVP_OFF
 
-
-
 ORG 0x00
+
 CBLOCK 0x20
-    NUM1    ; RB6-RB4
-    NUM2    ; RB3-RB0
+    NUM1 ;Nibble alto 
+    NUM2 ;Nibble bajo
     RESULT
-
-
+    DELAY1      ; contador externo del retardo
+    DELAY2      ; contador interno del retardo
 ENDC
+
 CONFIGURACION
-BSF STATUS,RP0
-MOVLW b'11111111'
-MOVWF TRISB      ; PORTB entrada
-CLRF TRISD       ; PORTD salida
-BCF STATUS,RP0
+    BSF STATUS,RP0
+    MOVLW b'11111111'
+    MOVWF TRISB
+    CLRF TRISD
+    BCF STATUS,RP0
 
 MAIN
-
     MOVF PORTB,W
-
     ANDLW b'00001111'
     MOVWF NUM2
 
@@ -45,19 +43,35 @@ MAIN
 
 SUMA
     MOVF NUM2,W
-    ADDWF NUM1,W   
+    ADDWF NUM1,W
     MOVWF RESULT
     GOTO MOSTRAR
 
 RESTA
     MOVF NUM2,W
-    SUBWF NUM1,W   
+    SUBWF NUM1,W
     MOVWF RESULT
 
 MOSTRAR
     MOVF RESULT,W
     MOVWF PORTD
 
+    CALL DELAY          ; retardo antes de volver a leer
+
     GOTO MAIN
+
+DELAY
+    MOVLW D'200'
+    MOVWF DELAY1
+LOOP_EXT
+    MOVLW D'250'
+    MOVWF DELAY2
+LOOP_INT
+    NOP
+    DECFSZ DELAY2,1
+    GOTO LOOP_INT
+    DECFSZ DELAY1,1
+    GOTO LOOP_EXT
+    RETURN
 
 END
