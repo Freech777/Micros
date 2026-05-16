@@ -1,2 +1,7 @@
 .err
 .mcs
+
+
+*.workspace
+Project Backups/
+Opto/IR/
