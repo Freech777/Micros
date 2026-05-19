@@ -51,6 +51,11 @@ BSF ADCON0,2
 ;Lectura del sistema en general de manera inicial
 MAIN
 
+;Nuestra condicional va a ser la puerta abierta
+
+
+CALL Retardo_20ms
+
 
 
 
