@@ -15,8 +15,30 @@
 ;   PIN D7      PIN PA2          AN2
 ;   PIN D8      PIN PA3          AN3
 
-;   PIN IR
+;   PIN IR      PIN PB5
 
+
+;============Modulos PWM para motores a driver===========
+;   PWM                 PIC18F4550
+;   (Simple ECCP)       PIN PC1
+;   (CCP)               PIN PC2
+
+
+;============Modulos de logica de los motores avanzar y retroceder=======
+;   PIC18F4550       DRIVER TB717     
+;   PIN PD0              AIN1
+;   PIN PD1              AIN2
+;   PIN PD2              BIN1
+;   PIN PD3              BIN2
+;   PIN PC1              PWMA
+;   PIN PC2              PWMB 
+
+;============Salidas de el driver a los motores=================
+;   DRIVER TB717      MOTORES
+;       A01           IZQUIERDO (IZQ)
+;       A02           IZQUIERDO (DER)
+;       B01           DERECHO (IZQ)
+;       B02           DERECHO (DER)
 
 #include "p18f4550.inc"
 
