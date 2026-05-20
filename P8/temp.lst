@@ -1,0 +1,581 @@
+MPASM  5.39                          TEMP.ASM   5-19-2026  22:55:53         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 ; ==============================================================================
+                      00002 ;  BARRIDO DE LEDs CON REINICIO CONDICIONAL
+                      00003 ;  Microcontrolador: PIC16F877A
+                      00004 ;  Oscilador: 4 MHz (1 instrucción = 1 microsegundo)
+                      00005 ; ==============================================================================
+                      00006 ;  ENTRADAS  (PORTB)
+                      00007 ;    RB0 = Botón de INICIO (PB1) - Activo en ALTO (1)
+                      00008 ;    RB1 = Botón de PARO   (PB2) - Activo en ALTO (1)
+                      00009 ;
+                      00010 ;  SALIDAS   (PORTC)
+                      00011 ;    RC0 a RC7 = LEDs indicadores
+                      00012 ; ==============================================================================
+                      00013 
+                      00014     LIST        P=16F877A
+                      00015     #INCLUDE    <P16F877A.INC>
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F877A processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2010 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00555         LIST
+                      00016 
+2007   3F31           00017     __CONFIG    _XT_OSC & _WDT_OFF & _PWRTE_ON & _BODEN_OFF & _LVP_OFF & _CP_OFF
+                      00018 
+                      00019     CBLOCK  0x20
+  00000020            00020         LED_STATE   ; Guarda la posición actual del LED encendido
+  00000021            00021         CONT1       ; Variables para el retardo
+  00000022            00022         CONT2
+  00000023            00023         CONT3
+                      00024     ENDC
+                      00025 
+0000                  00026     ORG     0x0000
+0000   2801           00027     GOTO    INICIO
+                      00028 
+                      00029 ; ==============================================================================
+                      00030 ;  CONFIGURACIÓN INICIAL
+                      00031 ; ==============================================================================
+0001                  00032 INICIO:
+0001   1683           00033     BSF     STATUS, RP0     ; Banco 1
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0002   0187           00034     CLRF    TRISC           ; PORTC como salida (LEDs)
+0003   30FF           00035     MOVLW   0xFF
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0004   0086           00036     MOVWF   TRISB           ; PORTB como entrada (Botones)
+0005   1283           00037     BCF     STATUS, RP0     ; Banco 0
+                      00038 
+0006   0187           00039     CLRF    PORTC           ; Apagar todos los LEDs
+                      00040     
+                      00041     ; La primera vez iniciamos el barrido desde RC0
+0007   3001           00042     MOVLW   b'00000001'     
+MPASM  5.39                          TEMP.ASM   5-19-2026  22:55:53         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0008   00A0           00043     MOVWF   LED_STATE
+                      00044 
+                      00045 ; ==============================================================================
+                      00046 ;  ESTADO DE REPOSO (ESPERANDO RB0)
+                      00047 ; ==============================================================================
+0009                  00048 ESPERAR_INICIO:
+0009   1886           00049     BTFSC   PORTB, 1        ; Por seguridad, si presionan RB1, asegurar apagado
+000A   281E           00050     GOTO    DETENER
+                      00051 
+000B   1C06           00052     BTFSS   PORTB, 0        ; ¿Se presionó RB0? (Espera un 1 lógico)
+000C   2809           00053     GOTO    ESPERAR_INICIO  ; Si no, sigue esperando
+                      00054 
+                      00055     ; Si se presionó RB0, esperamos a que lo suelten para evitar dobles lecturas
+000D                  00056 ESPERAR_SOLTAR_RB0:
+000D   1806           00057     BTFSC   PORTB, 0
+000E   280D           00058     GOTO    ESPERAR_SOLTAR_RB0
+                      00059 
+                      00060 ; ==============================================================================
+                      00061 ;  ESTADO DE BARRIDO ACTIVO
+                      00062 ; ==============================================================================
+000F                  00063 BARRIDO_LOOP:
+                      00064     ; 1. Encender el LED correspondiente
+000F   0820           00065     MOVF    LED_STATE, W
+0010   0087           00066     MOVWF   PORTC
+                      00067 
+                      00068     ; 2. Esperar 0.5 segundos (mientras vigila si se presiona RB1)
+0011   2024           00069     CALL    DELAY_500MS_CHECK_STOP
+                      00070 
+                      00071     ; 3. Verificar qué devolvió el retardo
+                      00072     ; Si W=1 significa que se presionó RB1 durante la pausa
+0012   3A01           00073     XORLW   0x01
+0013   1903           00074     BTFSC   STATUS, Z
+0014   281E           00075     GOTO    DETENER         ; Se interrumpió el ciclo
+                      00076 
+                      00077     ; 4. Si terminó el medio segundo, desplazar el bit a la izquierda
+0015   1003           00078     BCF     STATUS, C       ; Limpiar el Carry por seguridad
+0016   0DA0           00079     RLF     LED_STATE, F    ; Desplazar el 1 a la izquierda
+                      00080 
+                      00081     ; 5. Si el 1 se salió del registro (todos los bits en 0), reiniciar en RC0
+0017   0820           00082     MOVF    LED_STATE, W
+0018   1903           00083     BTFSC   STATUS, Z
+0019   281B           00084     GOTO    REINICIAR_RC0
+                      00085     
+001A   280F           00086     GOTO    BARRIDO_LOOP    ; Repetir con el siguiente LED
+                      00087 
+001B                  00088 REINICIAR_RC0:
+001B   3001           00089     MOVLW   b'00000001'     ; Vuelve a iniciar en RC0 de forma natural
+001C   00A0           00090     MOVWF   LED_STATE
+001D   280F           00091     GOTO    BARRIDO_LOOP
+                      00092 
+                      00093 ; ==============================================================================
+                      00094 ;  RUTINA DE PARO Y RESET (Condición de RC3)
+                      00095 ; ==============================================================================
+MPASM  5.39                          TEMP.ASM   5-19-2026  22:55:53         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+001E                  00096 DETENER:
+001E   0187           00097     CLRF    PORTC           ; Apagar todos los LEDs al instante
+                      00098     
+                      00099     ; Configurar para que la próxima vez inicie en RC3 (Bit 3)
+001F   3008           00100     MOVLW   b'00001000'     
+0020   00A0           00101     MOVWF   LED_STATE
+                      00102 
+0021                  00103 ESPERAR_SOLTAR_RB1:
+0021   1886           00104     BTFSC   PORTB, 1        ; Esperar hasta que se suelte el botón de paro
+0022   2821           00105     GOTO    ESPERAR_SOLTAR_RB1
+                      00106     
+0023   2809           00107     GOTO    ESPERAR_INICIO  ; Volver a esperar RB0
+                      00108 
+                      00109 ; ==============================================================================
+                      00110 ;  SUBRUTINA: Retardo de ~0.5 segundos vigilando RB1
+                      00111 ;  Retorna W = 0 si terminó normal. Retorna W = 1 si se presionó RB1.
+                      00112 ; ==============================================================================
+0024                  00113 DELAY_500MS_CHECK_STOP:
+0024   3032           00114     MOVLW   .50             ; 50 ciclos externos
+0025   00A3           00115     MOVWF   CONT3
+0026                  00116 LOOP_500:
+                      00117     
+                      00118     ; --- AQUÍ REVISAMOS EL BOTÓN DURANTE EL RETARDO ---
+0026   1886           00119     BTFSC   PORTB, 1        ; ¿Se presionó RB1 (Paro)?
+0027   3401           00120     RETLW   0x01            ; Si sí, salir inmediatamente con W=1
+                      00121     ; --------------------------------------------------
+                      00122 
+0028   3028           00123     MOVLW   .40             ; Ciclo medio
+0029   00A2           00124     MOVWF   CONT2
+002A                  00125 LOOP_10:
+002A   3052           00126     MOVLW   .82             ; Ciclo interno
+002B   00A1           00127     MOVWF   CONT1
+002C                  00128 LOOP_1:
+002C   0000           00129     NOP
+002D   0BA1           00130     DECFSZ  CONT1, F
+002E   282C           00131     GOTO    LOOP_1
+                      00132     
+002F   0BA2           00133     DECFSZ  CONT2, F
+0030   282A           00134     GOTO    LOOP_10
+                      00135 
+0031   0BA3           00136     DECFSZ  CONT3, F
+0032   2826           00137     GOTO    LOOP_500
+                      00138 
+0033   3400           00139     RETLW   0x00            ; Retornar W=0 (Ciclo completado sin interrupciones)
+                      00140 
+                      00141     END
+MPASM  5.39                          TEMP.ASM   5-19-2026  22:55:53         PAGE  4
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ADCON0                            0000001F
+ADCON1                            0000009F
+ADCS0                             00000006
+ADCS1                             00000007
+ADCS2                             00000006
+ADDEN                             00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESL                            0000009E
+BARRIDO_LOOP                      0000000F
+BCLIE                             00000003
+BCLIF                             00000003
+BF                                00000000
+BRGH                              00000002
+C                                 00000000
+C1INV                             00000004
+C1OUT                             00000006
+C2INV                             00000005
+C2OUT                             00000007
+CCP1CON                           00000017
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCP2CON                           0000001D
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2X                             00000005
+CCP2Y                             00000004
+CCPR1                             00000015
+CCPR1H                            00000016
+CCPR1L                            00000015
+CCPR2                             0000001B
+CCPR2H                            0000001C
+CCPR2L                            0000001B
+CHS0                              00000003
+CHS1                              00000004
+CHS2                              00000005
+CIS                               00000003
+MPASM  5.39                          TEMP.ASM   5-19-2026  22:55:53         PAGE  5
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CKE                               00000006
+CKP                               00000004
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             0000009C
+CMIE                              00000006
+CMIF                              00000006
+CONT1                             00000021
+CONT2                             00000022
+CONT3                             00000023
+CREN                              00000004
+CSRC                              00000007
+CVR0                              00000000
+CVR1                              00000001
+CVR2                              00000002
+CVR3                              00000003
+CVRCON                            0000009D
+CVREN                             00000007
+CVROE                             00000006
+CVRR                              00000005
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+DELAY_500MS_CHECK_STOP            00000024
+DETENER                           0000001E
+D_A                               00000005
+D_NOT_A                           00000005
+EEADR                             0000010D
+EEADRH                            0000010F
+EECON1                            0000018C
+EECON2                            0000018D
+EEDATA                            0000010C
+EEDATH                            0000010E
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+ESPERAR_INICIO                    00000009
+ESPERAR_SOLTAR_RB0                0000000D
+ESPERAR_SOLTAR_RB1                00000021
+F                                 00000001
+FERR                              00000002
+FSR                               00000004
+GCEN                              00000007
+GIE                               00000007
+GO                                00000002
+GO_DONE                           00000002
+GO_NOT_DONE                       00000002
+I2C_DATA                          00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+IBF                               00000007
+MPASM  5.39                          TEMP.ASM   5-19-2026  22:55:53         PAGE  6
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+IBOV                              00000005
+INDF                              00000000
+INICIO                            00000001
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IRP                               00000007
+LED_STATE                         00000020
+LOOP_1                            0000002C
+LOOP_10                           0000002A
+LOOP_500                          00000026
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BO                            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000002
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RC8                           00000006
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_TX8                           00000006
+NOT_W                             00000002
+NOT_WRITE                         00000002
+OBF                               00000006
+OERR                              00000001
+OPTION_REG                        00000081
+P                                 00000004
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PEIE                              00000006
+PEN                               00000002
+PIE1                              0000008C
+PIE2                              0000008D
+PIR1                              0000000C
+PIR2                              0000000D
+PORTA                             00000005
+PORTB                             00000006
+PORTC                             00000007
+PORTD                             00000008
+PORTE                             00000009
+PR2                               00000092
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+MPASM  5.39                          TEMP.ASM   5-19-2026  22:55:53         PAGE  7
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PSPIE                             00000007
+PSPIF                             00000007
+PSPMODE                           00000004
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RC8_9                             00000006
+RC9                               00000006
+RCD8                              00000000
+RCEN                              00000003
+RCIE                              00000005
+RCIF                              00000005
+RCREG                             0000001A
+RCSTA                             00000018
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+READ_WRITE                        00000002
+REINICIAR_RC0                     0000001B
+RP0                               00000005
+RP1                               00000006
+RSEN                              00000001
+MPASM  5.39                          TEMP.ASM   5-19-2026  22:55:53         PAGE  8
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RX9                               00000006
+RX9D                              00000000
+R_NOT_W                           00000002
+R_W                               00000002
+S                                 00000003
+SEN                               00000000
+SMP                               00000007
+SPBRG                             00000099
+SPEN                              00000007
+SREN                              00000005
+SSPADD                            00000093
+SSPBUF                            00000013
+SSPCON                            00000014
+SSPCON2                           00000091
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000094
+STATUS                            00000003
+SYNC                              00000004
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000010
+T1INSYNC                          00000002
+T1OSCEN                           00000003
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000012
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR1CS                            00000001
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             0000000E
+TMR1ON                            00000000
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+MPASM  5.39                          TEMP.ASM   5-19-2026  22:55:53         PAGE  9
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000087
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000088
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000089
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TX8_9                             00000006
+TX9                               00000006
+TX9D                              00000000
+TXD8                              00000000
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXREG                             00000019
+TXSTA                             00000098
+UA                                00000001
+W                                 00000000
+WCOL                              00000007
+MPASM  5.39                          TEMP.ASM   5-19-2026  22:55:53         PAGE 10
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+Z                                 00000002
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003EFF
+_CP_ALL                           00001FFF
+_CP_OFF                           00003FFF
+_DEBUG_OFF                        00003FFF
+_DEBUG_ON                         000037FF
+_DEVID1                           00002006
+_HS_OSC                           00003FFE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_LP_OSC                           00003FFC
+_LVP_OFF                          00003F7F
+_LVP_ON                           00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_RC_OSC                           00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+_WRT_1FOURTH                      00003BFF
+_WRT_256                          00003DFF
+_WRT_HALF                         000039FF
+_WRT_OFF                          00003FFF
+_XT_OSC                           00003FFD
+__16F877A                         00000001
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+0000 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXX------------
+2000 : -------X-------- ---------------- ---------------- ----------------
+
+All other memory blocks unused.
+
+Program Memory Words Used:    52
+Program Memory Words Free:  8140
+
+
+Errors   :     0
+Warnings :     0 reported,     0 suppressed
+Messages :     2 reported,     0 suppressed
+
+
