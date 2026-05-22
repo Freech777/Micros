@@ -1,0 +1,1128 @@
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[205]: Found directive in column 1. (LIST)
+                      00001 LIST p=16F877A
+Warning[205]: Found directive in column 1. (INCLUDE)
+                      00002 INCLUDE <p16F877A.inc>
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F877A processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2010 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00555         LIST
+                      00003 
+Warning[205]: Found directive in column 1. (__CONFIG)
+2007   3F31           00004 __CONFIG  _XT_OSC & _WDT_OFF & _PWRTE_ON & _BODEN_OFF & _LVP_OFF
+                      00005 
+Warning[205]: Found directive in column 1. (ORG)
+0000                  00006 ORG 0x00
+                      00007 
+Warning[205]: Found directive in column 1. (CBLOCK)
+                      00008 CBLOCK 0x20
+  00000020            00009 CONT            ; Se usa para el conteo de 3 veces el parpadeo de el push
+  00000021            00010 VAR_CENTRO
+                      00011 
+  00000022            00012 ADRESLESSX
+  00000023            00013 ADRESHIGHX
+                      00014 
+  00000024            00015 ADRESLESSY
+  00000025            00016 ADRESHIGHY
+                      00017 
+                      00018 ; --- NUEVAS VARIABLES PARA LOS 74HC595 ---
+  00000026            00019 LEDS_X          ; Registro sombra para el antiguo PORTC (Axis X)
+  00000027            00020 LEDS_Y          ; Registro sombra para el antiguo PORTD (Axis Y)
+  00000028            00021 SHIFT_COUNT     ; Contador para enviar los 16 bits
+  00000029            00022 TEMP_X          ; Variable temporal para el desplazamiento
+  0000002A            00023 TEMP_Y          ; Variable temporal para el desplazamiento
+Warning[205]: Found directive in column 1. (ENDC)
+                      00024 ENDC
+                      00025 
+                      00026 
+0000                  00027 CONFIGURACION
+                      00028 
+0000   1683           00029     BSF STATUS,RP0
+                      00030 
+                      00031     ; Entradas de manera analogica RA0 (Axis X) y RA1 (Axis Y)
+0001   3003           00032     MOVLW 0x03      
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0002   0085           00033     MOVWF TRISA
+                      00034 
+                      00035     ; PORTB
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0003   1006           00036     BCF TRISB,0     ; Salida para el centro del joystick
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0004   1486           00037     BSF TRISB,1     ; Entrada para selector AXIS X / AXIS Y
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0005   1506           00038     BSF TRISB,2     ; Entrada para el Push button (asumido por lÃ³gica)
+                      00039 
+                      00040     ; Puerto C: Solo RC0 (Data), RC1 (Clock) y RC2 (Latch) como salidas
+0006   30F8           00041     MOVLW b'11111000' 
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0007   0087           00042     MOVWF TRISC
+                      00043 
+                      00044     ; Puerto D: Ya no se usa para LEDs, se puede dejar como entrada o salida
+0008   30FF           00045     MOVLW 0xFF
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0009   0088           00046     MOVWF TRISD
+                      00047 
+                      00048     ; Configuracion de ADCON1
+000A   3089           00049     MOVLW b'10001001'   
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000B   009F           00050     MOVWF ADCON1
+                      00051 
+                      00052     ; Resgresamos al banco 0,0
+000C   1283           00053     BCF STATUS,RP0
+                      00054 
+000D   3086           00055     MOVLW b'10000110'   
+000E   009F           00056     MOVWF ADCON0
+                      00057 
+000F   1006           00058     BCF PORTB,0
+                      00059     
+                      00060     ; --- Inicializar Registros Sombra en 0 ---
+0010   01A6           00061     CLRF LEDS_X
+0011   01A7           00062     CLRF LEDS_Y
+0012   20BB           00063     CALL UPDATE_595     ; Actualizamos los chips para apagar todo
+                      00064 
+0013   3003           00065     MOVLW 0x03          ; Valor de 3 al cont
+0014   00A0           00066     MOVWF CONT
+                      00067 
+0015   30FF           00068     MOVLW 0xFF
+0016   00A1           00069     MOVWF VAR_CENTRO
+                      00070 
+0017   20ED           00071     CALL Retardo_20ms
+0018   151F           00072     BSF ADCON0,2
+                      00073 
+0019                  00074 MAIN                
+0019   1C86           00075     BTFSS PORTB,1
+001A   201E           00076     CALL AXIS_X
+001B   1886           00077     BTFSC PORTB,1
+001C   2061           00078     CALL AXIS_Y
+                      00079 
+001D   2819           00080     GOTO MAIN
+                      00081 
+                      00082 
+                      00083 ;---------------Bloque de rutinas para AXIS X-------------------
+001E                  00084 AXIS_X
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+001E   1906           00085     BTFSC PORTB,2
+001F   20AA           00086     CALL  PUSH_JOYSTICK
+                      00087 
+0020   3081           00088     MOVLW b'10000001'
+0021   009F           00089     MOVWF ADCON0
+                      00090 
+0022   20ED           00091     CALL Retardo_20ms
+                      00092 
+0023   151F           00093     BSF  ADCON0, 2
+0024   191F           00094     BTFSC ADCON0, 2
+0025   2824           00095     GOTO $-1
+                      00096 
+0026   081E           00097     MOVF  ADRESH, W
+0027   00A3           00098     MOVWF ADRESHIGHX
+                      00099 
+0028   1683           00100     BSF   STATUS, RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0029   081E           00101     MOVF  ADRESL, W
+002A   1283           00102     BCF   STATUS, RP0
+002B   00A2           00103     MOVWF ADRESLESSX        
+                      00104 
+002C   0821           00105     MOVF VAR_CENTRO,0
+002D   0222           00106     SUBWF ADRESLESSX,0
+002E   1D03           00107     BTFSS STATUS,Z
+002F   20A4           00108     CALL DEADPOINT
+                      00109 
+0030   18A3           00110     BTFSC ADRESHIGHX,1
+0031   203A           00111     CALL AXIS_X_RIGHT
+                      00112 
+0032   08A2           00113     MOVF ADRESLESSX, 1
+0033   1903           00114     BTFSC STATUS,Z
+0034   204E           00115     CALL AXIS_X_LEFT
+                      00116 
+0035   30FF           00117     MOVLW 0xFF
+0036   00A1           00118     MOVWF VAR_CENTRO
+                      00119 
+0037   1C86           00120     BTFSS PORTB,1
+0038   281E           00121     GOTO AXIS_X
+Warning[203]: Found opcode in column 1. (RETURN)
+0039   0008           00122 RETURN
+                      00123 
+                      00124 
+003A                  00125 AXIS_X_RIGHT
+003A   1006           00126     BCF PORTB,0
+003B   01A3           00127     CLRF ADRESHIGHX
+                      00128 
+003C   3010           00129     MOVLW b'00010000'
+003D   00A6           00130     MOVWF LEDS_X
+003E   20BB           00131     CALL UPDATE_595
+003F   20E7           00132     CALL Retardo_200ms
+                      00133 
+0040   1003           00134     BCF STATUS,C
+0041   0D26           00135     RLF LEDS_X,0
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0042   00A6           00136     MOVWF LEDS_X
+0043   20BB           00137     CALL UPDATE_595
+0044   20E7           00138     CALL Retardo_200ms
+                      00139 
+0045   0D26           00140     RLF LEDS_X,0
+0046   00A6           00141     MOVWF LEDS_X
+0047   20BB           00142     CALL UPDATE_595
+0048   20E7           00143     CALL Retardo_200ms
+                      00144 
+0049   0D26           00145     RLF LEDS_X,0
+004A   00A6           00146     MOVWF LEDS_X
+004B   20BB           00147     CALL UPDATE_595
+004C   20E7           00148     CALL Retardo_200ms
+Warning[203]: Found opcode in column 1. (RETURN)
+004D   0008           00149 RETURN
+                      00150 
+004E                  00151 AXIS_X_LEFT
+004E   1006           00152     BCF PORTB,0
+004F   01A2           00153     CLRF ADRESLESSX
+                      00154 
+0050   3001           00155     MOVLW 0x01
+0051   00A6           00156     MOVWF LEDS_X
+0052   20BB           00157     CALL UPDATE_595
+0053   20E7           00158     CALL Retardo_200ms
+                      00159     
+0054   0D26           00160     RLF LEDS_X,0
+0055   00A6           00161     MOVWF LEDS_X
+0056   20BB           00162     CALL UPDATE_595
+0057   20E7           00163     CALL Retardo_200ms
+                      00164     
+0058   0D26           00165     RLF LEDS_X,0
+0059   00A6           00166     MOVWF LEDS_X
+005A   20BB           00167     CALL UPDATE_595
+005B   20E7           00168     CALL Retardo_200ms
+                      00169     
+005C   0D26           00170     RLF LEDS_X,0
+005D   00A6           00171     MOVWF LEDS_X
+005E   20BB           00172     CALL UPDATE_595
+005F   20E7           00173     CALL Retardo_200ms
+Warning[203]: Found opcode in column 1. (RETURN)
+0060   0008           00174 RETURN
+                      00175 ;---------------Final de rutinas para AXIS X-------------------
+                      00176 
+                      00177 
+                      00178 ;---------------Bloque de rutinas para AXIS Y------------------
+0061                  00179 AXIS_Y
+0061   1906           00180     BTFSC PORTB,2
+0062   20AA           00181     CALL  PUSH_JOYSTICK
+                      00182     
+0063   3089           00183     MOVLW b'10001001'
+0064   009F           00184     MOVWF ADCON0
+0065   20ED           00185     CALL Retardo_20ms
+                      00186 
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0066   151F           00187     BSF ADCON0,2
+0067   191F           00188     BTFSC ADCON0,2
+0068   2867           00189     GOTO $-1
+                      00190 
+0069   081E           00191     MOVF ADRESH,0
+006A   00A5           00192     MOVWF ADRESHIGHY
+006B   1683           00193     BSF STATUS,RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+006C   081E           00194     MOVF ADRESL,0
+006D   1283           00195     BCF STATUS,RP0
+006E   00A4           00196     MOVWF ADRESLESSY
+                      00197 
+006F   0821           00198     MOVF VAR_CENTRO,0
+0070   0224           00199     SUBWF ADRESLESSY,0
+0071   1D03           00200     BTFSS STATUS,Z
+0072   20A4           00201     CALL DEADPOINT
+                      00202 
+0073   18A5           00203     BTFSC ADRESHIGHY,1
+0074   207D           00204     CALL AXIS_Y_UP
+                      00205 
+0075   08A4           00206     MOVF ADRESLESSY, 1
+0076   1903           00207     BTFSC STATUS,Z
+0077   2090           00208     CALL AXIS_Y_DOWN
+                      00209 
+0078   30FF           00210     MOVLW 0xFF
+0079   00A1           00211     MOVWF VAR_CENTRO
+                      00212 
+007A   1886           00213     BTFSC PORTB,1
+007B   2861           00214     GOTO AXIS_Y
+Warning[203]: Found opcode in column 1. (RETURN)
+007C   0008           00215 RETURN  
+                      00216 
+007D                  00217 AXIS_Y_UP
+007D   1006           00218     BCF PORTB,0
+007E   01A5           00219     CLRF ADRESHIGHY
+                      00220 
+007F   3001           00221     MOVLW 0x01
+0080   00A7           00222     MOVWF LEDS_Y
+0081   20BB           00223     CALL UPDATE_595
+0082   20E7           00224     CALL Retardo_200ms
+                      00225     
+0083   0D27           00226     RLF LEDS_Y,0
+0084   00A7           00227     MOVWF LEDS_Y
+0085   20BB           00228     CALL UPDATE_595
+0086   20E7           00229     CALL Retardo_200ms
+                      00230     
+0087   0D27           00231     RLF LEDS_Y,0
+0088   00A7           00232     MOVWF LEDS_Y
+0089   20BB           00233     CALL UPDATE_595
+008A   20E7           00234     CALL Retardo_200ms
+                      00235     
+008B   0D27           00236     RLF LEDS_Y,0
+008C   00A7           00237     MOVWF LEDS_Y
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+008D   20BB           00238     CALL UPDATE_595
+008E   20E7           00239     CALL Retardo_200ms
+Warning[203]: Found opcode in column 1. (RETURN)
+008F   0008           00240 RETURN
+                      00241 
+0090                  00242 AXIS_Y_DOWN
+0090   1006           00243     BCF PORTB,0
+0091   01A4           00244     CLRF ADRESLESSY
+                      00245 
+0092   3010           00246     MOVLW b'00010000'
+0093   00A7           00247     MOVWF LEDS_Y
+0094   20BB           00248     CALL UPDATE_595
+0095   20E7           00249     CALL Retardo_200ms
+                      00250 
+0096   1003           00251     BCF STATUS,C
+0097   0D27           00252     RLF LEDS_Y,0
+0098   00A7           00253     MOVWF LEDS_Y
+0099   20BB           00254     CALL UPDATE_595
+009A   20E7           00255     CALL Retardo_200ms
+                      00256 
+009B   0D27           00257     RLF LEDS_Y,0
+009C   00A7           00258     MOVWF LEDS_Y
+009D   20BB           00259     CALL UPDATE_595
+009E   20E7           00260     CALL Retardo_200ms
+                      00261 
+009F   0D27           00262     RLF LEDS_Y,0
+00A0   00A7           00263     MOVWF LEDS_Y
+00A1   20BB           00264     CALL UPDATE_595
+00A2   20E7           00265     CALL Retardo_200ms
+Warning[203]: Found opcode in column 1. (RETURN)
+00A3   0008           00266 RETURN
+                      00267 
+                      00268 
+                      00269 ;Punto muerto del joystick
+00A4                  00270 DEADPOINT
+00A4   3000           00271     MOVLW 0x00
+00A5   00A6           00272     MOVWF LEDS_X
+00A6   00A7           00273     MOVWF LEDS_Y
+00A7   20BB           00274     CALL UPDATE_595
+                      00275 
+00A8   1406           00276     BSF PORTB,0
+Warning[203]: Found opcode in column 1. (RETURN)
+00A9   0008           00277 RETURN
+                      00278 
+                      00279 
+                      00280 ;Rutina de la pulsacion del joystick
+00AA                  00281 PUSH_JOYSTICK
+                      00282 
+00AA   30FF           00283     MOVLW 0xFF      
+00AB   00A6           00284     MOVWF LEDS_X
+00AC   00A7           00285     MOVWF LEDS_Y
+00AD   20BB           00286     CALL UPDATE_595     ; Enciende todos los LEDs a traves del 595
+                      00287 
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00AE   1406           00288     BSF PORTB,0         ; Centro
+                      00289 
+00AF   2109           00290     CALL Retardo_500ms  
+                      00291 
+00B0   3000           00292     MOVLW 0x00      
+00B1   00A6           00293     MOVWF LEDS_X
+00B2   00A7           00294     MOVWF LEDS_Y
+00B3   20BB           00295     CALL UPDATE_595     ; Apaga todos los LEDs a traves del 595
+                      00296 
+00B4   1006           00297     BCF PORTB,0         ; Apaga centro
+                      00298 
+00B5   2109           00299     CALL Retardo_500ms  
+                      00300 
+00B6   0BA0           00301     DECFSZ CONT,1       
+00B7   28AA           00302     GOTO PUSH_JOYSTICK  
+                      00303 
+00B8   3003           00304     MOVLW 0x03          
+00B9   00A0           00305     MOVWF CONT
+                      00306 
+Warning[203]: Found opcode in column 1. (RETURN)
+00BA   0008           00307 RETURN
+                      00308 
+                      00309 
+                      00310 ; -----------------------------------------------------------------
+                      00311 ; NUEVA RUTINA: UPDATE_595
+                      00312 ; Esta rutina toma las variables LEDS_X y LEDS_Y y las envia en serie
+                      00313 ; a los registros de desplazamiento.
+                      00314 ; Orden de envio: Primero sale LEDS_Y (terminara en el segundo 74HC595)
+                      00315 ;                 Luego sale LEDS_X (se quedara en el primer 74HC595)
+                      00316 ; -----------------------------------------------------------------
+00BB                  00317 UPDATE_595
+00BB   1107           00318     BCF PORTC, 2        ; Pin RC2 (LATCH) en Bajo
+                      00319 
+                      00320     ; Hacemos copias de los registros para no destruir los originales al rotar
+00BC   0826           00321     MOVF LEDS_X, W
+00BD   00A9           00322     MOVWF TEMP_X
+00BE   0827           00323     MOVF LEDS_Y, W
+00BF   00AA           00324     MOVWF TEMP_Y
+                      00325 
+00C0   3010           00326     MOVLW d'16'         ; Vamos a desplazar 16 bits
+00C1   00A8           00327     MOVWF SHIFT_COUNT
+                      00328 
+00C2   1003           00329     BCF STATUS, C       ; Limpiar carry para evitar basura en el primer bit
+                      00330 
+00C3                  00331 SHIFT_LOOP
+                      00332     ; Desplazamos TEMP_X a la izquierda (El bit 7 de X pasa al Carry)
+00C3   0DA9           00333     RLF TEMP_X, F       
+                      00334     
+                      00335     ; Desplazamos TEMP_Y a la izquierda 
+                      00336     ; (El bit 7 de Y pasa al Carry, y el bit 7 de X que estaba en Carry entra al bit 0 de Y)
+00C4   0DAA           00337     RLF TEMP_Y, F       
+                      00338 
+                      00339     ; Verificamos que quedo en el Carry (El MSB de Y) y lo sacamos por DATA (RC0)
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00C5   1C03           00340     BTFSS STATUS, C     
+00C6   1007           00341     BCF PORTC, 0        ; Si Carry es 0, pon DATA en 0
+00C7   1803           00342     BTFSC STATUS, C     
+00C8   1407           00343     BSF PORTC, 0        ; Si Carry es 1, pon DATA en 1
+                      00344 
+                      00345     ; Damos un pulso al CLOCK (RC1) para que el 595 lea el DATA
+00C9   1487           00346     BSF PORTC, 1        
+00CA   0000           00347     NOP
+00CB   1087           00348     BCF PORTC, 1        
+                      00349 
+00CC   0BA8           00350     DECFSZ SHIFT_COUNT, F
+00CD   28C3           00351     GOTO SHIFT_LOOP
+                      00352 
+                      00353     ; Una vez enviados los 16 bits, subimos el LATCH para actualizar los LEDs visualmente
+00CE   1507           00354     BSF PORTC, 2        
+Warning[203]: Found opcode in column 1. (RETURN)
+00CF   0008           00355 RETURN
+                      00356 
+                      00357 #include "Retardos.inc"
+                      00001 ;**************************** Librería "RETARDOS.INC" *********************************
+                      00002 ;
+                      00003 ;       ===================================================================
+                      00004 ;         Del libro "MICROCONTROLADOR PIC16F84. DESARROLLO DE PROYECTOS"
+                      00005 ;         E. Palacios, F. Remiro y L. López.            www.pic16f84a.com
+                      00006 ;         Editorial Ra-Ma.  www.ra-ma.es
+                      00007 ;       ===================================================================
+                      00008 ;
+                      00009 ; Librería con múltiples subrutinas de retardos, desde 4 microsegundos hasta 20 segundos. 
+                      00010 ; Además se pueden implementar otras subrutinas muy fácilmente.
+                      00011 ;
+                      00012 ; Se han calculado para un sistema microcontrolador con un PIC trabajando con un cristal
+                      00013 ; de cuarzo a 4 MHz. Como cada ciclo máquina son 4 ciclos de reloj, resulta que cada
+                      00014 ; ciclo máquina tarda 4 x 1/4MHz = 1 µs.
+                      00015 ;
+                      00016 ; En los comentarios, "cm" significa "ciclos máquina".
+                      00017 ;
+                      00018 ; ZONA DE DATOS *********************************************************************
+                      00019 
+                      00020         CBLOCK
+  0000002B            00021         R_ContA                                         ; Contadores para los retardos.
+  0000002C            00022         R_ContB
+  0000002D            00023         R_ContC
+                      00024         ENDC
+                      00025 ;
+                      00026 ; RETARDOS de 4 hasta 10 microsegundos ---------------------------------------------------
+                      00027 ;
+                      00028 ; A continuación retardos pequeños teniendo en cuenta que para una frecuencia de 4 MHZ,
+                      00029 ; la llamada a subrutina "call" tarda 2 ciclos máquina, el retorno de subrutina
+                      00030 ; "return" toma otros 2 ciclos máquina y cada instrucción "nop" tarda 1 ciclo máquina.
+                      00031 ;
+00D0                  00032 Retardo_10micros                                ; La llamada "call" aporta 2 ciclos máquina.
+00D0   0000           00033         nop                                                     ; Aporta 1 ciclo máquina.
+00D1   0000           00034         nop                                                     ; Aporta 1 ciclo máquina.
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00D2   0000           00035         nop                                                     ; Aporta 1 ciclo máquina.
+00D3   0000           00036         nop                                                     ; Aporta 1 ciclo máquina.
+00D4   0000           00037         nop                                                     ; Aporta 1 ciclo máquina.
+00D5                  00038 Retardo_5micros                                 ; La llamada "call" aporta 2 ciclos máquina.
+00D5   0000           00039         nop                                                     ; Aporta 1 ciclo máquina.
+00D6                  00040 Retardo_4micros                                 ; La llamada "call" aporta 2 ciclos máquina.
+00D6   0008           00041         return                                          ; El salto del retorno aporta 2 ciclos máquina.
+                      00042 ;
+                      00043 ; RETARDOS de 20 hasta 500 microsegundos ------------------------------------------------
+                      00044 ;
+00D7                  00045 Retardo_500micros                               ; La llamada "call" aporta 2 ciclos máquina.
+00D7   0000           00046         nop                                                     ; Aporta 1 ciclo máquina.
+00D8   30A4           00047         movlw   d'164'                          ; Aporta 1 ciclo máquina. Este es el valor de "K".
+00D9   28E3           00048         goto    RetardoMicros           ; Aporta 2 ciclos máquina.
+00DA                  00049 Retardo_200micros                               ; La llamada "call" aporta 2 ciclos máquina.
+00DA   0000           00050         nop                                                     ; Aporta 1 ciclo máquina.
+00DB   3040           00051         movlw   d'64'                           ; Aporta 1 ciclo máquina. Este es el valor de "K".
+00DC   28E3           00052         goto    RetardoMicros           ; Aporta 2 ciclos máquina.
+00DD                  00053 Retardo_100micros                               ; La llamada "call" aporta 2 ciclos máquina.
+00DD   301F           00054         movlw   d'31'                           ; Aporta 1 ciclo máquina. Este es el valor de "K".
+00DE   28E3           00055         goto    RetardoMicros           ; Aporta 2 ciclos máquina.
+00DF                  00056 Retardo_50micros                                ; La llamada "call" aporta 2 ciclos máquina.
+00DF   0000           00057         nop                                                     ; Aporta 1 ciclo máquina.
+00E0   300E           00058         movlw   d'14'                           ; Aporta 1 ciclo máquina. Este es el valor de "K".
+00E1   28E3           00059         goto    RetardoMicros           ; Aporta 2 ciclos máquina.
+00E2                  00060 Retardo_20micros                                ; La llamada "call" aporta 2 ciclos máquina.
+00E2   3005           00061         movlw   d'5'                            ; Aporta 1 ciclo máquina. Este es el valor de "K".
+                      00062 ;
+                      00063 ; El próximo bloque "RetardoMicros" tarda:
+                      00064 ; 1 + (K-1) + 2 + (K-1)x2 + 2 = (2 + 3K) ciclos máquina.
+                      00065 ;
+00E3                  00066 RetardoMicros
+00E3   00AB           00067         movwf   R_ContA                         ; Aporta 1 ciclo máquina.
+00E4                  00068 Rmicros_Bucle
+00E4   0BAB           00069         decfsz  R_ContA,F                       ; (K-1)x1 cm (cuando no salta) + 2 cm (al saltar).
+00E5   28E4           00070         goto    Rmicros_Bucle           ; Aporta (K-1)x2 ciclos máquina.
+00E6   0008           00071         return                                          ; El salto del retorno aporta 2 ciclos máquina.
+                      00072 ;
+                      00073 ;En total estas subrutinas tardan:
+                      00074 ; - Retardo_500micros:  2 + 1 + 1 + 2 + (2 + 3K) = 500 cm = 500 µs. (para K=164 y 4 MHz).
+                      00075 ; - Retardo_200micros:  2 + 1 + 1 + 2 + (2 + 3K) = 200 cm = 200 µs. (para K= 64 y 4 MHz).
+                      00076 ; - Retardo_100micros:  2     + 1 + 2 + (2 + 3K) = 100 cm = 100 µs. (para K= 31 y 4 MHz).
+                      00077 ; - Retardo_50micros :  2 + 1 + 1 + 2 + (2 + 3K) =  50 cm =  50 µs. (para K= 14 y 4 MHz).
+                      00078 ; - Retardo_20micros :  2     + 1     + (2 + 3K) =  20 cm =  20 µs. (para K=  5 y 4 MHz).
+                      00079 ;
+                      00080 ; RETARDOS de 1 ms hasta 200 ms. --------------------------------------------------------
+                      00081 ;
+00E7                  00082 Retardo_200ms                                   ; La llamada "call" aporta 2 ciclos máquina.
+00E7   30C8           00083         movlw   d'200'                          ; Aporta 1 ciclo máquina. Este es el valor de "M".
+00E8   28F6           00084         goto    Retardos_ms                     ; Aporta 2 ciclos máquina.
+00E9                  00085 Retardo_100ms                                   ; La llamada "call" aporta 2 ciclos máquina.
+00E9   3064           00086         movlw   d'100'                          ; Aporta 1 ciclo máquina. Este es el valor de "M".
+00EA   28F6           00087         goto    Retardos_ms                     ; Aporta 2 ciclos máquina.
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00EB                  00088 Retardo_50ms                                    ; La llamada "call" aporta 2 ciclos máquina.
+00EB   3032           00089         movlw   d'50'                           ; Aporta 1 ciclo máquina. Este es el valor de "M".
+00EC   28F6           00090         goto    Retardos_ms                     ; Aporta 2 ciclos máquina.
+00ED                  00091 Retardo_20ms                                    ; La llamada "call" aporta 2 ciclos máquina.
+00ED   3014           00092         movlw   d'20'                           ; Aporta 1 ciclo máquina. Este es el valor de "M".
+00EE   28F6           00093         goto    Retardos_ms                     ; Aporta 2 ciclos máquina.
+00EF                  00094 Retardo_10ms                                    ; La llamada "call" aporta 2 ciclos máquina.
+00EF   300A           00095         movlw   d'10'                           ; Aporta 1 ciclo máquina. Este es el valor de "M".
+00F0   28F6           00096         goto    Retardos_ms                     ; Aporta 2 ciclos máquina.
+00F1                  00097 Retardo_5ms                                             ; La llamada "call" aporta 2 ciclos máquina.
+00F1   3005           00098         movlw   d'5'                            ; Aporta 1 ciclo máquina. Este es el valor de "M".
+00F2   28F6           00099         goto    Retardos_ms                     ; Aporta 2 ciclos máquina.
+00F3                  00100 Retardo_2ms                                             ; La llamada "call" aporta 2 ciclos máquina.
+00F3   3002           00101         movlw   d'2'                            ; Aporta 1 ciclo máquina. Este es el valor de "M".
+00F4   28F6           00102         goto    Retardos_ms                     ; Aporta 2 ciclos máquina.
+00F5                  00103 Retardo_1ms                                             ; La llamada "call" aporta 2 ciclos máquina.
+00F5   3001           00104         movlw   d'1'                            ; Aporta 1 ciclo máquina. Este es el valor de "M".
+                      00105 ;
+                      00106 ; El próximo bloque "Retardos_ms" tarda:
+                      00107 ; 1 + M + M + KxM + (K-1)xM + Mx2 + (K-1)Mx2 + (M-1) + 2 + (M-1)x2 + 2 =
+                      00108 ; = (2 + 4M + 4KM) ciclos máquina. Para K=249 y M=1 supone 1002 ciclos máquina
+                      00109 ; que a 4 MHz son 1002 µs = 1 ms.
+                      00110 ;
+00F6                  00111 Retardos_ms
+00F6   00AC           00112         movwf   R_ContB                         ; Aporta 1 ciclo máquina.
+00F7                  00113 R1ms_BucleExterno
+00F7   30F9           00114         movlw   d'249'                          ; Aporta Mx1 ciclos máquina. Este es el valor de "K".
+00F8   00AB           00115         movwf   R_ContA                         ; Aporta Mx1 ciclos máquina.
+00F9                  00116 R1ms_BucleInterno
+00F9   0000           00117         nop                                                     ; Aporta KxMx1 ciclos máquina.
+00FA   0BAB           00118         decfsz  R_ContA,F                       ; (K-1)xMx1 cm (cuando no salta) + Mx2 cm (al saltar).
+00FB   28F9           00119         goto    R1ms_BucleInterno       ; Aporta (K-1)xMx2 ciclos máquina.
+00FC   0BAC           00120         decfsz  R_ContB,F                       ; (M-1)x1 cm (cuando no salta) + 2 cm (al saltar).
+00FD   28F7           00121         goto    R1ms_BucleExterno       ; Aporta (M-1)x2 ciclos máquina.
+00FE   0008           00122         return                                          ; El salto del retorno aporta 2 ciclos máquina.
+                      00123 ;
+                      00124 ;En total estas subrutinas tardan:
+                      00125 ; - Retardo_200ms:      2 + 1 + 2 + (2 + 4M + 4KM) = 200007 cm = 200 ms. (M=200 y K=249).
+                      00126 ; - Retardo_100ms:      2 + 1 + 2 + (2 + 4M + 4KM) = 100007 cm = 100 ms. (M=100 y K=249).
+                      00127 ; - Retardo_50ms :      2 + 1 + 2 + (2 + 4M + 4KM) =  50007 cm =  50 ms. (M= 50 y K=249).
+                      00128 ; - Retardo_20ms :      2 + 1 + 2 + (2 + 4M + 4KM) =  20007 cm =  20 ms. (M= 20 y K=249).
+                      00129 ; - Retardo_10ms :      2 + 1 + 2 + (2 + 4M + 4KM) =  10007 cm =  10 ms. (M= 10 y K=249).
+                      00130 ; - Retardo_5ms  :      2 + 1 + 2 + (2 + 4M + 4KM) =   5007 cm =   5 ms. (M=  5 y K=249).
+                      00131 ; - Retardo_2ms  :      2 + 1 + 2 + (2 + 4M + 4KM) =   2007 cm =   2 ms. (M=  2 y K=249).
+                      00132 ; - Retardo_1ms  :      2 + 1     + (2 + 4M + 4KM) =   1005 cm =   1 ms. (M=  1 y K=249).
+                      00133 ;
+                      00134 ; RETARDOS de 0.5 hasta 20 segundos ---------------------------------------------------
+                      00135 ;
+00FF                  00136 Retardo_20s                                             ; La llamada "call" aporta 2 ciclos máquina.
+00FF   30C8           00137         movlw   d'200'                          ; Aporta 1 ciclo máquina. Este es el valor de "N".
+0100   290A           00138         goto    Retardo_1Decima         ; Aporta 2 ciclos máquina.
+0101                  00139 Retardo_10s                                             ; La llamada "call" aporta 2 ciclos máquina.
+0101   3064           00140         movlw   d'100'                          ; Aporta 1 ciclo máquina. Este es el valor de "N".
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0102   290A           00141         goto    Retardo_1Decima         ; Aporta 2 ciclos máquina.
+0103                  00142 Retardo_5s                                              ; La llamada "call" aporta 2 ciclos máquina.
+0103   3032           00143         movlw   d'50'                           ; Aporta 1 ciclo máquina. Este es el valor de "N".
+0104   290A           00144         goto    Retardo_1Decima         ; Aporta 2 ciclos máquina.
+0105                  00145 Retardo_2s                                              ; La llamada "call" aporta 2 ciclos máquina.
+0105   3014           00146         movlw   d'20'                           ; Aporta 1 ciclo máquina. Este es el valor de "N".
+0106   290A           00147         goto    Retardo_1Decima         ; Aporta 2 ciclos máquina.
+0107                  00148 Retardo_1s                                              ; La llamada "call" aporta 2 ciclos máquina.
+0107   300A           00149         movlw   d'10'                           ; Aporta 1 ciclo máquina. Este es el valor de "N".
+0108   290A           00150         goto    Retardo_1Decima         ; Aporta 2 ciclos máquina.
+0109                  00151 Retardo_500ms                                   ; La llamada "call" aporta 2 ciclos máquina.
+0109   3005           00152         movlw   d'5'                            ; Aporta 1 ciclo máquina. Este es el valor de "N".
+                      00153 ;
+                      00154 ; El próximo bloque "Retardo_1Decima" tarda:
+                      00155 ; 1 + N + N + MxN + MxN + KxMxN + (K-1)xMxN + MxNx2 + (K-1)xMxNx2 +
+                      00156 ;   + (M-1)xN + Nx2 + (M-1)xNx2 + (N-1) + 2 + (N-1)x2 + 2 =
+                      00157 ; = (2 + 4M + 4MN + 4KM) ciclos máquina. Para K=249, M=100 y N=1 supone 100011
+                      00158 ; ciclos máquina que a 4 MHz son 100011 µs = 100 ms = 0,1 s = 1 décima de segundo.
+                      00159 ;
+010A                  00160 Retardo_1Decima
+010A   00AD           00161         movwf   R_ContC                         ; Aporta 1 ciclo máquina.
+010B                  00162 R1Decima_BucleExterno2
+010B   3064           00163         movlw   d'100'                          ; Aporta Nx1 ciclos máquina. Este es el valor de "M".
+010C   00AC           00164         movwf   R_ContB                         ; Aporta Nx1 ciclos máquina.
+010D                  00165 R1Decima_BucleExterno
+010D   30F9           00166         movlw   d'249'                          ; Aporta MxNx1 ciclos máquina. Este es el valor de "K".
+010E   00AB           00167         movwf   R_ContA                         ; Aporta MxNx1 ciclos máquina.
+010F                  00168 R1Decima_BucleInterno          
+010F   0000           00169         nop                                                     ; Aporta KxMxNx1 ciclos máquina.
+0110   0BAB           00170         decfsz  R_ContA,F                       ; (K-1)xMxNx1 cm (si no salta) + MxNx2 cm (al saltar).
+0111   290F           00171         goto    R1Decima_BucleInterno   ; Aporta (K-1)xMxNx2 ciclos máquina.
+0112   0BAC           00172         decfsz  R_ContB,F                       ; (M-1)xNx1 cm (cuando no salta) + Nx2 cm (al saltar).
+0113   290D           00173         goto    R1Decima_BucleExterno   ; Aporta (M-1)xNx2 ciclos máquina.
+0114   0BAD           00174         decfsz  R_ContC,F                       ; (N-1)x1 cm (cuando no salta) + 2 cm (al saltar).
+0115   290B           00175         goto    R1Decima_BucleExterno2  ; Aporta (N-1)x2 ciclos máquina.
+0116   0008           00176         return                                          ; El salto del retorno aporta 2 ciclos máquina.
+                      00177 ;
+                      00178 ;En total estas subrutinas tardan:
+                      00179 ; - Retardo_20s:        2 + 1 + 2 + (2 + 4N + 4MN + 4KMN) = 20000807 cm = 20 s.
+                      00180 ;                       (N=200, M=100 y K=249).
+                      00181 ; - Retardo_10s:        2 + 1 + 2 + (2 + 4N + 4MN + 4KMN) = 10000407 cm = 10 s.
+                      00182 ;                       (N=100, M=100 y K=249).
+                      00183 ; - Retardo_5s:         2 + 1 + 2 + (2 + 4N + 4MN + 4KMN) =  5000207 cm =  5 s.
+                      00184 ;                       (N= 50, M=100 y K=249).
+                      00185 ; - Retardo_2s:         2 + 1 + 2 + (2 + 4N + 4MN + 4KMN) =  2000087 cm =  2 s.
+                      00186 ;                       (N= 20, M=100 y K=249).
+                      00187 ; - Retardo_1s:         2 + 1 + 2 + (2 + 4N + 4MN + 4KMN) =  1000047 cm =  1 s.
+                      00188 ;                       (N= 10, M=100 y K=249).
+                      00189 ; - Retardo_500ms:      2 + 1     + (2 + 4N + 4MN + 4KMN) =   500025 cm = 0,5 s.
+                      00190 ;                       (N=  5, M=100 y K=249).
+                      00191 
+                      00192 ;       ===================================================================
+                      00193 ;         Del libro "MICROCONTROLADOR PIC16F84. DESARROLLO DE PROYECTOS"
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00194 ;         E. Palacios, F. Remiro y L. López.            www.pic16f84a.com
+                      00195 ;         Editorial Ra-Ma.  www.ra-ma.es
+                      00196 ;       ===================================================================
+                      00197 
+                      00198 
+                      00199 
+                      00200 
+                      00358 
+Warning[205]: Found directive in column 1. (END)
+                      00359 END
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 13
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ADCON0                            0000001F
+ADCON1                            0000009F
+ADCS0                             00000006
+ADCS1                             00000007
+ADCS2                             00000006
+ADDEN                             00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESHIGHX                        00000023
+ADRESHIGHY                        00000025
+ADRESL                            0000009E
+ADRESLESSX                        00000022
+ADRESLESSY                        00000024
+AXIS_X                            0000001E
+AXIS_X_LEFT                       0000004E
+AXIS_X_RIGHT                      0000003A
+AXIS_Y                            00000061
+AXIS_Y_DOWN                       00000090
+AXIS_Y_UP                         0000007D
+BCLIE                             00000003
+BCLIF                             00000003
+BF                                00000000
+BRGH                              00000002
+C                                 00000000
+C1INV                             00000004
+C1OUT                             00000006
+C2INV                             00000005
+C2OUT                             00000007
+CCP1CON                           00000017
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCP2CON                           0000001D
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2X                             00000005
+CCP2Y                             00000004
+CCPR1                             00000015
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 14
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CCPR1H                            00000016
+CCPR1L                            00000015
+CCPR2                             0000001B
+CCPR2H                            0000001C
+CCPR2L                            0000001B
+CHS0                              00000003
+CHS1                              00000004
+CHS2                              00000005
+CIS                               00000003
+CKE                               00000006
+CKP                               00000004
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             0000009C
+CMIE                              00000006
+CMIF                              00000006
+CONFIGURACION                     00000000
+CONT                              00000020
+CREN                              00000004
+CSRC                              00000007
+CVR0                              00000000
+CVR1                              00000001
+CVR2                              00000002
+CVR3                              00000003
+CVRCON                            0000009D
+CVREN                             00000007
+CVROE                             00000006
+CVRR                              00000005
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+DEADPOINT                         000000A4
+D_A                               00000005
+D_NOT_A                           00000005
+EEADR                             0000010D
+EEADRH                            0000010F
+EECON1                            0000018C
+EECON2                            0000018D
+EEDATA                            0000010C
+EEDATH                            0000010E
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+F                                 00000001
+FERR                              00000002
+FSR                               00000004
+GCEN                              00000007
+GIE                               00000007
+GO                                00000002
+GO_DONE                           00000002
+GO_NOT_DONE                       00000002
+I2C_DATA                          00000005
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 15
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+IBF                               00000007
+IBOV                              00000005
+INDF                              00000000
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IRP                               00000007
+LEDS_X                            00000026
+LEDS_Y                            00000027
+MAIN                              00000019
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BO                            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000002
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RC8                           00000006
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_TX8                           00000006
+NOT_W                             00000002
+NOT_WRITE                         00000002
+OBF                               00000006
+OERR                              00000001
+OPTION_REG                        00000081
+P                                 00000004
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PEIE                              00000006
+PEN                               00000002
+PIE1                              0000008C
+PIE2                              0000008D
+PIR1                              0000000C
+PIR2                              0000000D
+PORTA                             00000005
+PORTB                             00000006
+PORTC                             00000007
+PORTD                             00000008
+PORTE                             00000009
+PR2                               00000092
+PS0                               00000000
+PS1                               00000001
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 16
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PS2                               00000002
+PSA                               00000003
+PSPIE                             00000007
+PSPIF                             00000007
+PSPMODE                           00000004
+PUSH_JOYSTICK                     000000AA
+R                                 00000002
+R1Decima_BucleExterno             0000010D
+R1Decima_BucleExterno2            0000010B
+R1Decima_BucleInterno             0000010F
+R1ms_BucleExterno                 000000F7
+R1ms_BucleInterno                 000000F9
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RC8_9                             00000006
+RC9                               00000006
+RCD8                              00000000
+RCEN                              00000003
+RCIE                              00000005
+RCIF                              00000005
+RCREG                             0000001A
+RCSTA                             00000018
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 17
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+READ_WRITE                        00000002
+RP0                               00000005
+RP1                               00000006
+RSEN                              00000001
+RX9                               00000006
+RX9D                              00000000
+R_ContA                           0000002B
+R_ContB                           0000002C
+R_ContC                           0000002D
+R_NOT_W                           00000002
+R_W                               00000002
+RetardoMicros                     000000E3
+Retardo_100micros                 000000DD
+Retardo_100ms                     000000E9
+Retardo_10micros                  000000D0
+Retardo_10ms                      000000EF
+Retardo_10s                       00000101
+Retardo_1Decima                   0000010A
+Retardo_1ms                       000000F5
+Retardo_1s                        00000107
+Retardo_200micros                 000000DA
+Retardo_200ms                     000000E7
+Retardo_20micros                  000000E2
+Retardo_20ms                      000000ED
+Retardo_20s                       000000FF
+Retardo_2ms                       000000F3
+Retardo_2s                        00000105
+Retardo_4micros                   000000D6
+Retardo_500micros                 000000D7
+Retardo_500ms                     00000109
+Retardo_50micros                  000000DF
+Retardo_50ms                      000000EB
+Retardo_5micros                   000000D5
+Retardo_5ms                       000000F1
+Retardo_5s                        00000103
+Retardos_ms                       000000F6
+Rmicros_Bucle                     000000E4
+S                                 00000003
+SEN                               00000000
+SHIFT_COUNT                       00000028
+SHIFT_LOOP                        000000C3
+SMP                               00000007
+SPBRG                             00000099
+SPEN                              00000007
+SREN                              00000005
+SSPADD                            00000093
+SSPBUF                            00000013
+SSPCON                            00000014
+SSPCON2                           00000091
+SSPEN                             00000005
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 18
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SSPIE                             00000003
+SSPIF                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000094
+STATUS                            00000003
+SYNC                              00000004
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000010
+T1INSYNC                          00000002
+T1OSCEN                           00000003
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000012
+TEMP_X                            00000029
+TEMP_Y                            0000002A
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR1CS                            00000001
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             0000000E
+TMR1ON                            00000000
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 19
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000087
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000088
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000089
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TX8_9                             00000006
+TX9                               00000006
+TX9D                              00000000
+TXD8                              00000000
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXREG                             00000019
+TXSTA                             00000098
+UA                                00000001
+UPDATE_595                        000000BB
+VAR_CENTRO                        00000021
+W                                 00000000
+WCOL                              00000007
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+Z                                 00000002
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003EFF
+_CP_ALL                           00001FFF
+_CP_OFF                           00003FFF
+MPASM  5.39                           JOY.ASM   5-22-2026  3:16:32         PAGE 20
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_DEBUG_OFF                        00003FFF
+_DEBUG_ON                         000037FF
+_DEVID1                           00002006
+_HS_OSC                           00003FFE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_LP_OSC                           00003FFC
+_LVP_OFF                          00003F7F
+_LVP_ON                           00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_RC_OSC                           00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+_WRT_1FOURTH                      00003BFF
+_WRT_256                          00003DFF
+_WRT_HALF                         000039FF
+_WRT_OFF                          00003FFF
+_XT_OSC                           00003FFD
+__16F877A                         00000001
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+0000 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0040 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0080 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+00C0 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0100 : XXXXXXXXXXXXXXXX XXXXXXX--------- ---------------- ----------------
+2000 : -------X-------- ---------------- ---------------- ----------------
+
+All other memory blocks unused.
+
+Program Memory Words Used:   279
+Program Memory Words Free:  7913
+
+
+Errors   :     0
+Warnings :    16 reported,     0 suppressed
+Messages :     9 reported,     0 suppressed
+
+

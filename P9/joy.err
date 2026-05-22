@@ -1,0 +1,25 @@
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 1 : Found directive in column 1. (LIST)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 2 : Found directive in column 1. (INCLUDE)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 4 : Found directive in column 1. (__CONFIG)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 6 : Found directive in column 1. (ORG)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 8 : Found directive in column 1. (CBLOCK)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 24 : Found directive in column 1. (ENDC)
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 33 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 36 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 37 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 38 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 42 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 46 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 50 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 101 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 122 : Found opcode in column 1. (RETURN)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 149 : Found opcode in column 1. (RETURN)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 174 : Found opcode in column 1. (RETURN)
+Message[302] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 194 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 215 : Found opcode in column 1. (RETURN)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 240 : Found opcode in column 1. (RETURN)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 266 : Found opcode in column 1. (RETURN)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 277 : Found opcode in column 1. (RETURN)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 307 : Found opcode in column 1. (RETURN)
+Warning[203] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 355 : Found opcode in column 1. (RETURN)
+Warning[205] C:\USERS\FREEM\DESKTOP\MICROS_WOO\P9\JOY.ASM 359 : Found directive in column 1. (END)
