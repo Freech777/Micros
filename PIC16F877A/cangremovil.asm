@@ -5,7 +5,9 @@ __CONFIG  _XT_OSC & _WDT_OFF & _PWRTE_ON & _BODEN_OFF & _LVP_OFF
 
 
 CBLOCK 0x20
+;==========================================================================================
 ;Valores que necesitamos leer de los 8 canales del ADC del los sensores seguidores de linea
+;==========================================================================================
     VAL_AN0_H, VAL_AN0_L
     VAL_AN1_H, VAL_AN1_L
     VAL_AN2_H, VAL_AN2_L
@@ -14,31 +16,79 @@ CBLOCK 0x20
     VAL_AN5_H, VAL_AN5_L
     VAL_AN6_H, VAL_AN6_L
     VAL_AN7_H, VAL_AN7_L
-    CONTADOR_RETARDO   ;Retardo para espera de carga de la conversion del ADC
+;==========================================================================================
+
+
+    CONT_RETARDO_CAP   ;Retardo para espera de carga de la conversion del ADC
+
+;==========================================================================================
+;Bloque de variables necesarios para generar el retardo de 3 segundos
+;==========================================================================================
+    CONT_INT
+    CONT_MID
+    CONT_EXT
+;==========================================================================================
+
+;==========================================================================================
+;Variables para hacer los calculos de las operaciones 
+    UMBRAL_ADC      ;Valor de corte que nos permite saber el estado de cada sensor
+    ESTADO_SENSORES ;Estado de almacenamiento de los bits de los sensores
+;==========================================================================================
+
 
 ENDC
 
 
 CONFIGURACION
-BSF STATUS,RP0
-MOVLW 0xFF
-MOVWF TRISA
+    BSF STATUS,RP0
+    MOVLW 0xFF
+    MOVWF TRISA
 
-BSF TRISE,0
-BSF TRISE,1
-BSF TRISE,2
+    BSF TRISE,0
+    BSF TRISE,1
+    BSF TRISE,2
 
-MOVLW b'01000000'
-MOVWF TRISB
+    MOVLW b'00000001'
+    MOVWF TRISB
 
-MOVLW b'10000000'
-MOVWF ADCON1
-BCF STATUS,RP0
+    MOVLW b'10000000'
+    MOVWF ADCON1
+    BCF STATUS,RP0
+
+    MOVLW d'125'    ;Valor del umbral que dira el pic si sepone en alto o bajo
+    MOVWF UMBRAL_ADC
+
+
+INICIO
+;========================================
+;Punto de partida el cual se presionara 
+;========================================
+    BTFSC PORTB,0
+    GOTO MAIN
+
+GOTO INICIO
+
+ESPERA_3s
+
+;==================================================================================================
+;Antes de iniciar cualquier tarea se esperara el coche 3 segundos apartir de la pulsacion del boton
+;==================================================================================================
+CALL RETARDO_3s
 
 
 
 
 MAIN
+
+
+;========================================
+;La siguiente rutina sera la principal, esta se ciclara constantemente
+;========================================
+
+
+
+
+
 
 
 
@@ -176,10 +226,39 @@ ESPERAR_ADC
 
 RETARDO_20us
     MOVLW 0x06
-    MOVWF CONTADOR_RETARDO
+    MOVWF CONT_RETARDO_CAP
 LOOP_20us
-    DECFSZ CONTADOR_RETARDO, 1
+    DECFSZ CONT_RETARDO_CAP, 1
     GOTO LOOP_20us
     RETURN
 ;========================================
+
+
+;========================================
+;Contador de el tiempo de espera apartir que se presione el boton de inicio
+;========================================
+
+RETARDO_3s
+    MOVLW 0x12
+    MOVWF CONT_EXT
+LOOP2
+    MOVLW 0x250
+    MOVWF CONT_MID
+LOOP1
+    MOVLW 0x250
+    MOVWF CONT_INT
+LOOP0
+    NOP
+    DECFSZ CONT_INT,1
+    GOTO LOOP0
+
+    DECFSZ CONT_MID,1
+    GOTO LOOP1
+
+    DECFSZ CONT_EXT,1
+    GOTO LOOP2
+
+    RETURN
+
+
 END

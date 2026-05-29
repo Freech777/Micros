@@ -1,0 +1,755 @@
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[205]: Found directive in column 1. (LIST)
+                      00001 LIST p=16F877A
+Warning[205]: Found directive in column 1. (INCLUDE)
+                      00002 INCLUDE <p16F877A.inc>
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F877A processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2010 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00555         LIST
+                      00003 
+Warning[205]: Found directive in column 1. (__CONFIG)
+2007   3F31           00004 __CONFIG  _XT_OSC & _WDT_OFF & _PWRTE_ON & _BODEN_OFF & _LVP_OFF
+                      00005 
+                      00006 
+Warning[205]: Found directive in column 1. (CBLOCK)
+                      00007 CBLOCK 0x20
+                      00008 ;==========================================================================================
+                      00009 ;Valores que necesitamos leer de los 8 canales del ADC del los sensores seguidores de linea
+                      00010 ;==========================================================================================
+  00000020            00011     VAL_AN0_H, VAL_AN0_L
+  00000022            00012     VAL_AN1_H, VAL_AN1_L
+  00000024            00013     VAL_AN2_H, VAL_AN2_L
+  00000026            00014     VAL_AN3_H, VAL_AN3_L
+  00000028            00015     VAL_AN4_H, VAL_AN4_L
+  0000002A            00016     VAL_AN5_H, VAL_AN5_L
+  0000002C            00017     VAL_AN6_H, VAL_AN6_L
+  0000002E            00018     VAL_AN7_H, VAL_AN7_L
+                      00019 ;==========================================================================================
+                      00020 
+                      00021 
+  00000030            00022     CONT_RETARDO_CAP   ;Retardo para espera de carga de la conversion del ADC
+                      00023 
+                      00024 ;==========================================================================================
+                      00025 ;Bloque de variables necesarios para generar el retardo de 3 segundos
+                      00026 ;==========================================================================================
+  00000031            00027     CONT_INT
+  00000032            00028     CONT_MID
+  00000033            00029     CONT_EXT
+                      00030 ;==========================================================================================
+                      00031 
+Warning[205]: Found directive in column 1. (ENDC)
+                      00032 ENDC
+                      00033 
+                      00034 
+0000                  00035 CONFIGURACION
+0000   1683           00036     BSF STATUS,RP0
+0001   30FF           00037     MOVLW 0xFF
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0002   0085           00038     MOVWF TRISA
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00039 
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0003   1409           00040     BSF TRISE,0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0004   1489           00041     BSF TRISE,1
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0005   1509           00042     BSF TRISE,2
+                      00043 
+0006   3040           00044     MOVLW b'01000000'
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0007   0086           00045     MOVWF TRISB
+                      00046 
+0008   3080           00047     MOVLW b'10000000'
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0009   009F           00048     MOVWF ADCON1
+000A   1283           00049     BCF STATUS,RP0
+                      00050 
+                      00051 
+000B                  00052 INICIO
+                      00053 ;========================================
+                      00054 ;Punto de partida el cual se presionara 
+                      00055 ;========================================
+000B   1806           00056     BTFSC PORTB,0
+000C   280F           00057     GOTO MAIN
+                      00058 
+Warning[203]: Found opcode in column 1. (GOTO)
+000D   280B           00059 GOTO INICIO
+                      00060 
+000E                  00061 ESPERA_3s
+                      00062 
+                      00063 ;==================================================================================================
+                      00064 ;Antes de iniciar cualquier tarea se esperara el coche 3 segundos apartir de la pulsacion del boton
+                      00065 ;==================================================================================================
+Warning[203]: Found opcode in column 1. (CALL)
+000E   2062           00066 CALL RETARDO_3s
+                      00067 
+                      00068 
+                      00069 
+                      00070 
+000F                  00071 MAIN
+                      00072 
+                      00073 
+                      00074 ;========================================
+                      00075 ;La siguiente rutina sera la principal, esta se ciclara constantemente
+                      00076 ;========================================
+                      00077 
+                      00078 
+                      00079 
+                      00080 
+                      00081 
+                      00082 
+                      00083 
+                      00084 
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+000F                  00085 CANALES_ADC
+                      00086 ;========================================
+                      00087 ;Rutina de lectura de los canales AN0-AN7
+                      00088 ;========================================
+                      00089 
+                      00090 ;La lectura de los canales de manera individualmente se repiten
+                      00091 ;La estructura es la siguiente
+                      00092 ;1._Se pasa la configuracion correspondiente de ADCON0
+                      00093 ;2._Se llama a la rutina de lectura de el canal activo
+                      00094 ;3._Se espera 20us a que se haga la conversion
+                      00095 ;4._Teniendo los valores en ADRESH y ADRESL se mueven a las variables temporales de cada canal
+                      00096 ;5._Se repite la rutina hasta terminar todos los canales
+                      00097 
+                      00098     ;Lectura del canal 0 (AN0)
+000F   3041           00099     MOVLW b'01000001'
+0010   009F           00100     MOVWF ADCON0
+0011   2058           00101     CALL LECTURA_ADC
+                      00102 
+0012   081E           00103     MOVF ADRESH,0
+0013   00A0           00104     MOVWF VAL_AN0_H
+0014   1683           00105     BSF STATUS,RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0015   081E           00106     MOVF ADRESL,0
+0016   1283           00107     BCF STATUS,RP0
+0017   00A1           00108     MOVWF VAL_AN0_L
+                      00109 
+                      00110     ;Lectura del canal 1 (AN1)
+0018   3049           00111     MOVLW b'01001001'
+0019   009F           00112     MOVWF ADCON0
+001A   2058           00113     CALL LECTURA_ADC
+                      00114 
+001B   081E           00115     MOVF ADRESH,0
+001C   00A0           00116     MOVWF VAL_AN0_H
+001D   1683           00117     BSF STATUS,RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+001E   081E           00118     MOVF ADRESL,0
+001F   1283           00119     BCF STATUS,RP0
+0020   00A1           00120     MOVWF VAL_AN0_L
+                      00121 
+                      00122     ;Lectura del canal 2 (AN2)
+0021   3051           00123     MOVLW b'01010001'
+0022   009F           00124     MOVWF ADCON0
+0023   2058           00125     CALL LECTURA_ADC
+                      00126 
+0024   081E           00127     MOVF ADRESH,0
+0025   00A0           00128     MOVWF VAL_AN0_H
+0026   1683           00129     BSF STATUS,RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0027   081E           00130     MOVF ADRESL,0
+0028   1283           00131     BCF STATUS,RP0
+0029   00A1           00132     MOVWF VAL_AN0_L
+                      00133     ;Lectura del canal 3 (AN3)
+002A   3059           00134     MOVLW b'01011001'
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+002B   009F           00135     MOVWF ADCON0
+002C   2058           00136     CALL LECTURA_ADC
+                      00137 
+002D   081E           00138     MOVF ADRESH,0
+002E   00A0           00139     MOVWF VAL_AN0_H
+002F   1683           00140     BSF STATUS,RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0030   081E           00141     MOVF ADRESL,0
+0031   1283           00142     BCF STATUS,RP0
+0032   00A1           00143     MOVWF VAL_AN0_L
+                      00144     ;Lectura del canal 4 (AN4)
+0033   3061           00145     MOVLW b'01100001'
+0034   009F           00146     MOVWF ADCON0
+0035   2058           00147     CALL LECTURA_ADC
+                      00148 
+0036   081E           00149     MOVF ADRESH,0
+0037   00A0           00150     MOVWF VAL_AN0_H
+0038   1683           00151     BSF STATUS,RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0039   081E           00152     MOVF ADRESL,0
+003A   1283           00153     BCF STATUS,RP0
+003B   00A1           00154     MOVWF VAL_AN0_L
+                      00155     ;Lectura del canal 5 (AN5)
+003C   3069           00156     MOVLW b'01101001'
+003D   009F           00157     MOVWF ADCON0
+003E   2058           00158     CALL LECTURA_ADC
+                      00159 
+003F   081E           00160     MOVF ADRESH,0
+0040   00A0           00161     MOVWF VAL_AN0_H
+0041   1683           00162     BSF STATUS,RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0042   081E           00163     MOVF ADRESL,0
+0043   1283           00164     BCF STATUS,RP0
+0044   00A1           00165     MOVWF VAL_AN0_L
+                      00166     ;Lectura del canal 6 (AN6)
+0045   3071           00167     MOVLW b'01110001'
+0046   009F           00168     MOVWF ADCON0
+0047   2058           00169     CALL LECTURA_ADC
+                      00170 
+0048   081E           00171     MOVF ADRESH,0
+0049   00A0           00172     MOVWF VAL_AN0_H
+004A   1683           00173     BSF STATUS,RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+004B   081E           00174     MOVF ADRESL,0
+004C   1283           00175     BCF STATUS,RP0
+004D   00A1           00176     MOVWF VAL_AN0_L
+                      00177     ;Lectura del canal 7 (AN7)
+004E   3079           00178     MOVLW b'01111001'
+004F   009F           00179     MOVWF ADCON0
+0050   2058           00180     CALL LECTURA_ADC
+                      00181 
+0051   081E           00182     MOVF ADRESH,0
+0052   00A0           00183     MOVWF VAL_AN0_H
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0053   1683           00184     BSF STATUS,RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0054   081E           00185     MOVF ADRESL,0
+0055   1283           00186     BCF STATUS,RP0
+0056   00A1           00187     MOVWF VAL_AN0_L
+                      00188 
+0057   0008           00189     RETURN
+                      00190 
+                      00191 ;========================================
+                      00192 
+                      00193 
+                      00194 
+                      00195 ;========================================
+                      00196 ;Rutinas de lectura y espera del ADC
+                      00197 ;========================================
+0058                  00198 LECTURA_ADC
+0058   205D           00199     CALL RETARDO_20us
+0059   151F           00200     BSF ADCON0,2
+005A                  00201 ESPERAR_ADC
+005A   191F           00202     BTFSC ADCON0,2
+005B   285A           00203     GOTO ESPERAR_ADC
+005C   0008           00204     RETURN
+                      00205 ;========================================
+                      00206 
+                      00207 
+                      00208 
+                      00209 
+                      00210 
+                      00211 ;======================================== RETARDOS GENERALES ========================================
+                      00212 
+                      00213 ;========================================
+                      00214 ;Contador del capacitor interno del ADC
+                      00215 ;========================================
+                      00216 
+005D                  00217 RETARDO_20us
+005D   3006           00218     MOVLW 0x06
+005E   00B0           00219     MOVWF CONT_RETARDO_CAP
+005F                  00220 LOOP_20us
+005F   0BB0           00221     DECFSZ CONT_RETARDO_CAP, 1
+0060   285F           00222     GOTO LOOP_20us
+0061   0008           00223     RETURN
+                      00224 ;========================================
+                      00225 
+                      00226 
+                      00227 ;========================================
+                      00228 ;Contador de el tiempo de espera apartir que se presione el boton de inicio
+                      00229 ;========================================
+                      00230 
+0062                  00231 RETARDO_3s
+0062   3012           00232     MOVLW 0x12
+0063   00B3           00233     MOVWF CONT_EXT
+0064                  00234 LOOP2
+Warning[202]: Argument out of range.  Least significant bits used.
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0064   3050           00235     MOVLW 0x250
+0065   00B2           00236     MOVWF CONT_MID
+0066                  00237 LOOP1
+Warning[202]: Argument out of range.  Least significant bits used.
+0066   3050           00238     MOVLW 0x250
+0067   00B1           00239     MOVWF CONT_INT
+0068                  00240 LOOP0
+0068   0000           00241     NOP
+0069   0BB1           00242     DECFSZ CONT_INT,1
+006A   2868           00243     GOTO LOOP0
+                      00244 
+006B   0BB2           00245     DECFSZ CONT_MID,1
+006C   2866           00246     GOTO LOOP1
+                      00247 
+006D   0BB3           00248     DECFSZ CONT_EXT,1
+006E   2864           00249     GOTO LOOP2
+                      00250 
+006F   0008           00251     RETURN
+                      00252 
+                      00253 
+Warning[205]: Found directive in column 1. (END)
+                      00254 END
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE  7
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ADCON0                            0000001F
+ADCON1                            0000009F
+ADCS0                             00000006
+ADCS1                             00000007
+ADCS2                             00000006
+ADDEN                             00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESL                            0000009E
+BCLIE                             00000003
+BCLIF                             00000003
+BF                                00000000
+BRGH                              00000002
+C                                 00000000
+C1INV                             00000004
+C1OUT                             00000006
+C2INV                             00000005
+C2OUT                             00000007
+CANALES_ADC                       0000000F
+CCP1CON                           00000017
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCP2CON                           0000001D
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2X                             00000005
+CCP2Y                             00000004
+CCPR1                             00000015
+CCPR1H                            00000016
+CCPR1L                            00000015
+CCPR2                             0000001B
+CCPR2H                            0000001C
+CCPR2L                            0000001B
+CHS0                              00000003
+CHS1                              00000004
+CHS2                              00000005
+CIS                               00000003
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE  8
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CKE                               00000006
+CKP                               00000004
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             0000009C
+CMIE                              00000006
+CMIF                              00000006
+CONFIGURACION                     00000000
+CONT_EXT                          00000033
+CONT_INT                          00000031
+CONT_MID                          00000032
+CONT_RETARDO_CAP                  00000030
+CREN                              00000004
+CSRC                              00000007
+CVR0                              00000000
+CVR1                              00000001
+CVR2                              00000002
+CVR3                              00000003
+CVRCON                            0000009D
+CVREN                             00000007
+CVROE                             00000006
+CVRR                              00000005
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+D_A                               00000005
+D_NOT_A                           00000005
+EEADR                             0000010D
+EEADRH                            0000010F
+EECON1                            0000018C
+EECON2                            0000018D
+EEDATA                            0000010C
+EEDATH                            0000010E
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+ESPERAR_ADC                       0000005A
+ESPERA_3s                         0000000E
+F                                 00000001
+FERR                              00000002
+FSR                               00000004
+GCEN                              00000007
+GIE                               00000007
+GO                                00000002
+GO_DONE                           00000002
+GO_NOT_DONE                       00000002
+I2C_DATA                          00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+IBF                               00000007
+IBOV                              00000005
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE  9
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+INDF                              00000000
+INICIO                            0000000B
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IRP                               00000007
+LECTURA_ADC                       00000058
+LOOP0                             00000068
+LOOP1                             00000066
+LOOP2                             00000064
+LOOP_20us                         0000005F
+MAIN                              0000000F
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BO                            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000002
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RC8                           00000006
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_TX8                           00000006
+NOT_W                             00000002
+NOT_WRITE                         00000002
+OBF                               00000006
+OERR                              00000001
+OPTION_REG                        00000081
+P                                 00000004
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PEIE                              00000006
+PEN                               00000002
+PIE1                              0000008C
+PIE2                              0000008D
+PIR1                              0000000C
+PIR2                              0000000D
+PORTA                             00000005
+PORTB                             00000006
+PORTC                             00000007
+PORTD                             00000008
+PORTE                             00000009
+PR2                               00000092
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE 10
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PSA                               00000003
+PSPIE                             00000007
+PSPIF                             00000007
+PSPMODE                           00000004
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RC8_9                             00000006
+RC9                               00000006
+RCD8                              00000000
+RCEN                              00000003
+RCIE                              00000005
+RCIF                              00000005
+RCREG                             0000001A
+RCSTA                             00000018
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+READ_WRITE                        00000002
+RETARDO_20us                      0000005D
+RETARDO_3s                        00000062
+RP0                               00000005
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE 11
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RP1                               00000006
+RSEN                              00000001
+RX9                               00000006
+RX9D                              00000000
+R_NOT_W                           00000002
+R_W                               00000002
+S                                 00000003
+SEN                               00000000
+SMP                               00000007
+SPBRG                             00000099
+SPEN                              00000007
+SREN                              00000005
+SSPADD                            00000093
+SSPBUF                            00000013
+SSPCON                            00000014
+SSPCON2                           00000091
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000094
+STATUS                            00000003
+SYNC                              00000004
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000010
+T1INSYNC                          00000002
+T1OSCEN                           00000003
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000012
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR1CS                            00000001
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             0000000E
+TMR1ON                            00000000
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE 12
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000087
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000088
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000089
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TX8_9                             00000006
+TX9                               00000006
+TX9D                              00000000
+TXD8                              00000000
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXREG                             00000019
+TXSTA                             00000098
+UA                                00000001
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE 13
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+VAL_AN0_H                         00000020
+VAL_AN0_L                         00000021
+VAL_AN1_H                         00000022
+VAL_AN1_L                         00000023
+VAL_AN2_H                         00000024
+VAL_AN2_L                         00000025
+VAL_AN3_H                         00000026
+VAL_AN3_L                         00000027
+VAL_AN4_H                         00000028
+VAL_AN4_L                         00000029
+VAL_AN5_H                         0000002A
+VAL_AN5_L                         0000002B
+VAL_AN6_H                         0000002C
+VAL_AN6_L                         0000002D
+VAL_AN7_H                         0000002E
+VAL_AN7_L                         0000002F
+W                                 00000000
+WCOL                              00000007
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+Z                                 00000002
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003EFF
+_CP_ALL                           00001FFF
+_CP_OFF                           00003FFF
+_DEBUG_OFF                        00003FFF
+_DEBUG_ON                         000037FF
+_DEVID1                           00002006
+_HS_OSC                           00003FFE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_LP_OSC                           00003FFC
+_LVP_OFF                          00003F7F
+_LVP_ON                           00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_RC_OSC                           00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+_WRT_1FOURTH                      00003BFF
+_WRT_256                          00003DFF
+_WRT_HALF                         000039FF
+_WRT_OFF                          00003FFF
+_XT_OSC                           00003FFD
+__16F877A                         00000001
+MPASM  5.39                   CANGREMOVIL.ASM   5-27-2026  15:50:51         PAGE 14
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+
+0000 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0040 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX ----------------
+2000 : -------X-------- ---------------- ---------------- ----------------
+
+All other memory blocks unused.
+
+Program Memory Words Used:   112
+Program Memory Words Free:  8080
+
+
+Errors   :     0
+Warnings :    10 reported,     0 suppressed
+Messages :    14 reported,     0 suppressed
+
+

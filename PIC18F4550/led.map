@@ -1,0 +1,59 @@
+MPLINK 4.38, Linker
+Linker Map File - Created Fri May 29 04:27:12 2026
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000000
+                   .org_1       code   0x000000    program   0x000004
+                   .org_2       code   0x000020    program   0x000044
+     .config_300000_LED.O    romdata   0x300000    program   0x000001
+     .config_300001_LED.O    romdata   0x300001    program   0x000001
+     .config_300002_LED.O    romdata   0x300002    program   0x000001
+     .config_300003_LED.O    romdata   0x300003    program   0x000001
+     .config_300005_LED.O    romdata   0x300005    program   0x000001
+     .config_300006_LED.O    romdata   0x300006    program   0x000001
+     .config_300008_LED.O    romdata   0x300008    program   0x000001
+     .config_300009_LED.O    romdata   0x300009    program   0x000001
+     .config_30000A_LED.O    romdata   0x30000a    program   0x000001
+     .config_30000B_LED.O    romdata   0x30000b    program   0x000001
+     .config_30000C_LED.O    romdata   0x30000c    program   0x000001
+     .config_30000D_LED.O    romdata   0x30000d    program   0x000001
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x000003      
+                            0x000020    0x000063      
+                            0x300000    0x300003      
+                            0x300005    0x300006      
+                            0x300008    0x30000d      
+            84 out of 33048 program addresses used, program memory utilization is 0%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+          Bucle_Principal   0x00002c    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+                   Inicio   0x000020    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+                    Lazo1   0x000050    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+                    Lazo2   0x00004c    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+                    Lazo3   0x000048    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+                  Retardo   0x000044    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                   Inicio   0x000020    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+          Bucle_Principal   0x00002c    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+                  Retardo   0x000044    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+                    Lazo3   0x000048    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+                    Lazo2   0x00004c    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+                    Lazo1   0x000050    program     static C:\Users\freem\Escritorio\Micros\PIC18F4550\led.asm
+
+
