@@ -1,10 +1,11 @@
 MPLINK 4.38, Linker
-Linker Map File - Created Wed May 27 15:50:52 2026
+Linker Map File - Created Sun May 31 12:21:24 2026
 
                                  Section Info
                   Section       Type    Address   Location Size(Bytes)
                 ---------  ---------  ---------  ---------  ---------
-                   .org_0       code   0x000000    program   0x0000e0
+                   .org_0       code   0x000000    program   0x000000
+                   .org_1       code   0x000000    program   0x0001ac
 .config_2007_CANGREMOVIL.O       code   0x002007    program   0x000002
 
 
@@ -12,46 +13,62 @@ Linker Map File - Created Wed May 27 15:50:52 2026
                               Program Memory Usage 
                                Start         End      
                            ---------   ---------      
-                            0x000000    0x00006f      
+                            0x000000    0x0000d5      
                             0x002007    0x002007      
-            113 out of 8454 program addresses used, program memory utilization is 1%
+            215 out of 8454 program addresses used, program memory utilization is 2%
 
 
 
                               Symbols - Sorted by Name
                      Name    Address   Location    Storage File                     
                 ---------  ---------  ---------  --------- ---------                
-              CANALES_ADC   0x00000f    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-            CONFIGURACION   0x000000    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-              ESPERAR_ADC   0x00005a    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                ESPERA_3s   0x00000e    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                   INICIO   0x00000b    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-              LECTURA_ADC   0x000058    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                    LOOP0   0x000068    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                    LOOP1   0x000066    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                    LOOP2   0x000064    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                LOOP_20us   0x00005f    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                     MAIN   0x00000f    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-             RETARDO_20us   0x00005d    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-               RETARDO_3s   0x000062    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
+           ACCION_AVANZAR   0x00008f    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+   ACCION_GIRO_DER_FUERTE   0x0000b3    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+     ACCION_GIRO_DER_LEVE   0x0000aa    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+   ACCION_GIRO_IZQ_FUERTE   0x0000a1    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+     ACCION_GIRO_IZQ_LEVE   0x000098    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+           ACCION_PERDIDO   0x0000bc    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+       BINARIZAR_SENSORES   0x000050    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+              CANALES_ADC   0x000022    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+            CONFIGURACION   0x000001    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+              ESPERAR_ADC   0x00004d    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                ESPERA_3s   0x00001d    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                   INICIO   0x00001a    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+              LECTURA_ADC   0x00004b    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                    LOOP0   0x0000ce    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                    LOOP1   0x0000cc    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                    LOOP2   0x0000ca    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                LOOP_20us   0x0000c5    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                     MAIN   0x00001e    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+             RETARDO_20us   0x0000c3    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+               RETARDO_3s   0x0000c8    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+           TOMAR_DECISION   0x00006a    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
 
 
 
                               Symbols - Sorted by Address
                      Name    Address   Location    Storage File                     
                 ---------  ---------  ---------  --------- ---------                
-            CONFIGURACION   0x000000    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                   INICIO   0x00000b    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                ESPERA_3s   0x00000e    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-              CANALES_ADC   0x00000f    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                     MAIN   0x00000f    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-              LECTURA_ADC   0x000058    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-              ESPERAR_ADC   0x00005a    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-             RETARDO_20us   0x00005d    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                LOOP_20us   0x00005f    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-               RETARDO_3s   0x000062    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                    LOOP2   0x000064    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                    LOOP1   0x000066    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
-                    LOOP0   0x000068    program     static C:\Users\freem\Escritorio\Micros\PIC16F877A\cangremovil.asm
+            CONFIGURACION   0x000001    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                   INICIO   0x00001a    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                ESPERA_3s   0x00001d    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                     MAIN   0x00001e    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+              CANALES_ADC   0x000022    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+              LECTURA_ADC   0x00004b    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+              ESPERAR_ADC   0x00004d    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+       BINARIZAR_SENSORES   0x000050    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+           TOMAR_DECISION   0x00006a    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+           ACCION_AVANZAR   0x00008f    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+     ACCION_GIRO_IZQ_LEVE   0x000098    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+   ACCION_GIRO_IZQ_FUERTE   0x0000a1    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+     ACCION_GIRO_DER_LEVE   0x0000aa    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+   ACCION_GIRO_DER_FUERTE   0x0000b3    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+           ACCION_PERDIDO   0x0000bc    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+             RETARDO_20us   0x0000c3    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                LOOP_20us   0x0000c5    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+               RETARDO_3s   0x0000c8    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                    LOOP2   0x0000ca    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                    LOOP1   0x0000cc    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
+                    LOOP0   0x0000ce    program     static C:\Users\freem\Desktop\Micros_woo\PIC16F877A\cangremovil.asm
 
 

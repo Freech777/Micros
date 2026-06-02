@@ -1,0 +1,109 @@
+MPLINK 4.38, Linker
+Linker Map File - Created Sun May 31 18:34:28 2026
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000000
+                   .org_1       code   0x000000    program   0x000004
+                   .org_2       code   0x000008    program   0x000004
+                   .org_3       code   0x000020    program   0x0002a2
+     .config_300000_PID.O    romdata   0x300000    program   0x000001
+     .config_300001_PID.O    romdata   0x300001    program   0x000001
+     .config_300002_PID.O    romdata   0x300002    program   0x000001
+     .config_300003_PID.O    romdata   0x300003    program   0x000001
+     .config_300005_PID.O    romdata   0x300005    program   0x000001
+     .config_300006_PID.O    romdata   0x300006    program   0x000001
+     .config_300008_PID.O    romdata   0x300008    program   0x000001
+     .config_300009_PID.O    romdata   0x300009    program   0x000001
+     .config_30000A_PID.O    romdata   0x30000a    program   0x000001
+     .config_30000B_PID.O    romdata   0x30000b    program   0x000001
+     .config_30000C_PID.O    romdata   0x30000c    program   0x000001
+     .config_30000D_PID.O    romdata   0x30000d    program   0x000001
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x000003      
+                            0x000008    0x00000b      
+                            0x000020    0x0002c1      
+                            0x300000    0x300003      
+                            0x300005    0x300006      
+                            0x300008    0x30000d      
+            694 out of 33048 program addresses used, program memory utilization is 2%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+  APLICAR_CONTROL_MOTORES   0x0001a8    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+          BUCLE_PRINCIPAL   0x000042    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+      CALCULAR_DERIVATIVO   0x000172    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+           CALCULAR_ERROR   0x0000d2    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+    CALCULAR_PROPORCIONAL   0x000148    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+            CONFIGURACION   0x000020    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+           CONFIGURAR_ADC   0x000086    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+           CONFIGURAR_PWM   0x000298    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+              CONTROL_PWM   0x000238    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+              ESPERAR_ADC   0x000290    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+       ESPERAR_LIBERACION   0x00004e    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+       FASE_2_MULTIPLICAR   0x00015c    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+     FASE_3_MULTIPLICAR_D   0x000192    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+        FASE_4_SATURACION   0x0001da    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+             LAZO_CARRERA   0x000054    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+           LEER_CANAL_ADC   0x00028c    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+              L_Debounce1   0x0002b8    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+              L_Debounce2   0x0002b4    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+              Lectura_ADC   0x000090    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+               MEZCLA_DER   0x000248    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+      MEZCLA_GIRA_DERECHA   0x0001b8    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+    MEZCLA_GIRA_IZQUIERDA   0x0001ca    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+               MEZCLA_IZQ   0x00025a    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+          RESTAR_TERMINOS   0x00020c    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+         RETARDO_DEBOUNCE   0x0002b0    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+               RUTINA_PID   0x000056    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+       SALIR_INTERRUPCION   0x000084    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+      SATURACION_HARDWARE   0x00026a    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+           SUMAR_TERMINOS   0x000222    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+                  SUMA_PD   0x0001fc    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+            CONFIGURACION   0x000020    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+          BUCLE_PRINCIPAL   0x000042    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+       ESPERAR_LIBERACION   0x00004e    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+             LAZO_CARRERA   0x000054    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+               RUTINA_PID   0x000056    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+       SALIR_INTERRUPCION   0x000084    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+           CONFIGURAR_ADC   0x000086    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+              Lectura_ADC   0x000090    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+           CALCULAR_ERROR   0x0000d2    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+    CALCULAR_PROPORCIONAL   0x000148    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+       FASE_2_MULTIPLICAR   0x00015c    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+      CALCULAR_DERIVATIVO   0x000172    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+     FASE_3_MULTIPLICAR_D   0x000192    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+  APLICAR_CONTROL_MOTORES   0x0001a8    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+      MEZCLA_GIRA_DERECHA   0x0001b8    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+    MEZCLA_GIRA_IZQUIERDA   0x0001ca    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+        FASE_4_SATURACION   0x0001da    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+                  SUMA_PD   0x0001fc    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+          RESTAR_TERMINOS   0x00020c    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+           SUMAR_TERMINOS   0x000222    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+              CONTROL_PWM   0x000238    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+               MEZCLA_DER   0x000248    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+               MEZCLA_IZQ   0x00025a    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+      SATURACION_HARDWARE   0x00026a    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+           LEER_CANAL_ADC   0x00028c    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+              ESPERAR_ADC   0x000290    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+           CONFIGURAR_PWM   0x000298    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+         RETARDO_DEBOUNCE   0x0002b0    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+              L_Debounce2   0x0002b4    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+              L_Debounce1   0x0002b8    program     static C:\Users\freem\Desktop\Micros_woo\PIC18F4550\COCHE\PID.asm
+
+

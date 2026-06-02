@@ -1,0 +1,1966 @@
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 ; PIC18F4550 Configuration Bit Settings
+                      00002 
+                      00003 ; Assembly source line config statements
+                      00004 
+                      00005 
+                      00006 ;Se van a definir los siguientes pines ADC para el modulo QTR-A8
+                      00007 
+                      00008 ;   QTR-8A      PIC18F4550      CHANNEL
+                      00009 ;   PIN D1      PIN PB0          AN12
+                      00010 ;   PIN D2      PIN PB1          AN10
+                      00011 ;   PIN D3      PIN PB2          AN8
+                      00012 ;   PIN D4      PIN PB4          AN11
+                      00013 ;   PIN D5      PIN PA0          AN0
+                      00014 ;   PIN D6      PIN PA1          AN1
+                      00015 ;   PIN D7      PIN PA2          AN2
+                      00016 ;   PIN D8      PIN PA3          AN3
+                      00017 
+                      00018 ;   PIN IR      PIN PB5
+                      00019 
+                      00020 
+                      00021 ;============Modulos PWM para motores a driver===========
+                      00022 ;   PWM                 PIC18F4550
+                      00023 ;   (Simple ECCP)       PIN PC1
+                      00024 ;   (CCP)               PIN PC2
+                      00025 
+                      00026 
+                      00027 ;============Modulos de logica de los motores avanzar y retroceder=======
+                      00028 ;   PIC18F4550       DRIVER TB717     
+                      00029 ;   PIN PD0              AIN1
+                      00030 ;   PIN PD1              AIN2
+                      00031 ;   PIN PD2              BIN1
+                      00032 ;   PIN PD3              BIN2
+                      00033 ;   PIN PC1              PWMA
+                      00034 ;   PIN PC2              PWMB 
+                      00035 
+                      00036 ;============Salidas de el driver a los motores=================
+                      00037 ;   DRIVER TB717      MOTORES
+                      00038 ;       A01           IZQUIERDO (IZQ)
+                      00039 ;       A02           IZQUIERDO (DER)
+                      00040 ;       B01           DERECHO (IZQ)
+                      00041 ;       B02           DERECHO (DER)
+                      00042     LIST P=18F4550
+                      00043     #include "p18f4550.inc"
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC18F4550 processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2010 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      01754         LIST
+                      00044 
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00045 ; --- CONFIGURACIÓN DE FUSIBLES (CRÍTICO) ---
+                      00046     ; Configuración para cristal externo de 20MHz y núcleo a 48MHz
+                      00047     
+C4 3E DF FE F9 9B FF F00048     CONFIG PLLDIV = 5         ; Divide el cristal de 20MHz entre 5 (para dar los 4MHz que requiere el PL
+                            L)
+       F FF FF FF FF 
+                      00049     CONFIG CPUDIV = OSC1_PLL2 ; Divide el reloj del PLL (96MHz) entre 2 = 48MHz de velocidad final
+                      00050     CONFIG FOSC = HSPLL_HS    ; Enciende el oscilador High Speed y activa el PLL
+                      00051     
+                      00052     CONFIG WDT = OFF          ; APAGA el Watchdog Timer (Para que no se reinicie solo)
+                      00053     CONFIG LVP = OFF          ; APAGA la programación en bajo voltaje (Evita reseteos fantasma)
+                      00054     CONFIG PBADEN = OFF       ; Inicia el Puerto B como digital (Súper útil luego para tu QTR-8A)
+                      00055     CONFIG MCLRE = ON         ; Activa el botón de Reset físico de tu placa Intesc
+                      00056 
+                      00057     ; --- Ajustes Defensivos para Competencia ---
+                      00058     ;CONFIG BOREN = OFF         APAGA el reseteo por caída de voltaje (Inmunidad al ruido de motores)
+                      00059     CONFIG XINST = OFF        ; APAGA instrucciones extendidas (Obligatorio para MPASM clásico)
+                      00060 
+                      00061     CBLOCK 0x20
+                      00062 ; Variables para la lectura del QTR-8A
+  00000020            00063         Posicion_L
+  00000021            00064         Posicion_H
+                      00065         
+                      00066         ; Variables del PID
+  00000022            00067         Setpoint_L
+  00000023            00068         Setpoint_H
+  00000024            00069         Error_L
+  00000025            00070         Error_H
+  00000026            00071         Error_Anterior_L
+  00000027            00072         Error_Anterior_H
+                      00073         
+                      00074         ; Salida final al módulo CCP (PWM)
+  00000028            00075         Control_L
+  00000029            00076         Control_H
+                      00077 
+                      00078         ;Valores de los sensores
+  0000002A            00079         Sens0
+  0000002B            00080         Sens1
+  0000002C            00081         Sens2
+  0000002D            00082         Sens3
+  0000002E            00083         Sens4
+  0000002F            00084         Sens5
+  00000030            00085         Sens6
+  00000031            00086         Sens7
+                      00087 
+                      00088         ;Suma de derecha a izquierda para el error
+  00000032            00089         Suma_Der_L
+  00000033            00090         Suma_Der_H
+  00000034            00091         Suma_Izq_L
+  00000035            00092         Suma_Izq_H
+  00000036            00093         Peso        ; Variable temporal para cargar 10, 20, 30 o 40
+                      00094 
+                      00095         ;Terminos para la variable proporcional
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+  00000037            00096         Kp              ; Variable de 8 bits (Configurable desde otra parte del código)
+  00000038            00097         Banderas        ; Registro de 1 byte. Usaremos el Bit 0 para guardar la dirección (0=Der, 1=Izq
+                            )
+  00000039            00098         Termino_P_L     ; 16 bits para el resultado final de P
+  0000003A            00099         Termino_P_H
+                      00100 
+                      00101         ;Terminos para la variable derivativa
+  0000003B            00102         Kd              ; Variable de 8 bits (Constante derivativa)
+  0000003C            00103         Delta_Error_L   ; Variable temporal para (Error - Error_Anterior)
+  0000003D            00104         Delta_Error_H
+  0000003E            00105         Termino_D_L     ; Resultado final del término D
+  0000003F            00106         Termino_D_H
+                      00107         ; Nota: Usaremos el Bit 1 del registro 'Banderas' para guardar 
+                      00108         ; la dirección de este "freno" (0=Suma a la derecha, 1=Suma a la izquierda) 
+                      00109 
+                      00110         ;Terminos para PWM de los motores
+  00000040            00111         Velocidad_Base
+  00000041            00112         PWM_Izq_Temp_L  ; Variables temporales de 16 bits para guardar
+  00000042            00113         PWM_Izq_Temp_H  ; el cálculo antes de pasarlo por los límites
+  00000043            00114         PWM_Der_Temp_L
+  00000044            00115         PWM_Der_Temp_H
+                      00116 
+  00000045            00117         contador1
+  00000046            00118         contador2
+                      00119 
+                      00120     ENDC
+                      00121 
+                      00122 ; --- VECTORES DE INICIO ---
+000000                00123     ORG 0x0000          ; Vector de Reset
+000000 EF10 F000      00124     GOTO CONFIGURACION
+                      00125 
+000008                00126     ORG 0x0008          ; Vector de Interrupción de ALTA Prioridad
+000008 EF2B F000      00127     GOTO RUTINA_PID     ; Saltamos a la rutina principal del PID
+                      00128 
+                      00129     ; ORG 0x0018        ; Vector de baja prioridad (No lo usaremos por ahora)
+                      00130     ; RETFIE
+                      00131 
+000020                00132     ORG 0x0020
+000020                00133 CONFIGURACION
+                      00134     ; 1. Configurar Puertos según tu tabla
+                      00135     ; (Aquí iría la configuración de TRISA, TRISB, TRISC, TRISD y ADCON1)
+                      00136 
+                      00137 ; --- PUERTO A (Sensores D5, D6, D7, D8 en PA0 a PA3) ---
+                      00138     ; Necesitan ser ENTRADAS para leer el voltaje
+000020 0E0F           00139     MOVLW b'00001111'
+000022 6E92           00140     MOVWF TRISA
+                      00141 
+                      00142     ; --- PUERTO B (Sensores D1-D4 en PB0, PB1, PB2, PB4) ---
+                      00143     ; PB5 es el PIN IR (Salida para encender los LEDs del QTR-8A)
+000024 0E1F           00144     MOVLW b'00011111'   ; PB4, PB2, PB1, PB0 como entradas. PB5 como salida.
+000026 6E93           00145     MOVWF TRISB
+                      00146 
+000028 0EFF           00147     MOVLW 0xFF
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00002A 6E94           00148     MOVWF TRISC
+                      00149 
+00002C 0EFF           00150     MOVLW 0xFF
+00002E 6E95           00151     MOVWF TRISD
+                      00152 
+000030 EC43 F000      00153     CALL CONFIGURAR_ADC
+                      00154 
+                      00155 
+                      00156     ; 2. Configurar Timer0 (Asumiendo 48MHz, Fosc/4 = 12MHz, ciclo de 83.3 ns)
+                      00157     ; Usaremos Timer0 a 16 bits para tener resolución fina en el retardo
+000034 0E85           00158     MOVLW b'10000101'   ; TMR0 ON, 16 bits, Prescaler 1:64
+000036 6ED5           00159     MOVWF T0CON
+                      00160     
+                      00161 
+000038 EC4C F001      00162     CALL CONFIGURAR_PWM
+                      00163     ; 3. Habilitar Interrupciones
+00003C 8AF2           00164     BSF INTCON, TMR0IE  ; Habilitar interrupción por desbordamiento del Timer0
+00003E 9EF2           00165     BCF INTCON, GIE     ; Habilitar interrupciones globales
+000040 8CF2           00166     BSF INTCON, PEIE    ; Habilitar interrupciones periféricas
+                      00167 
+000042                00168 BUCLE_PRINCIPAL
+                      00169 
+000042 B681           00170     BTFSC PORTB, 3
+000044 D7FE           00171     BRA BUCLE_PRINCIPAL
+                      00172 
+000046 EC58 F001      00173     CALL RETARDO_DEBOUNCE
+                      00174 
+00004A B681           00175     BTFSC PORTB, 3
+00004C D7FA           00176     BRA BUCLE_PRINCIPAL
+                      00177 
+00004E                00178 ESPERAR_LIBERACION
+00004E A681           00179     BTFSS PORTB,3
+000050 D7FE           00180     BRA ESPERAR_LIBERACION
+                      00181 
+000052 8EF2           00182     BSF INTCON,GIE
+                      00183 
+000054                00184 LAZO_CARRERA
+                      00185 
+000054 D7FF           00186     BRA LAZO_CARRERA
+                      00187 
+000056                00188 RUTINA_PID
+                      00189     ; Verificamos si la interrupción fue causada por el Timer0
+000056 A4F2           00190     BTFSS INTCON, TMR0IF
+000058 D015           00191     BRA SALIR_INTERRUPCION ; Si no fue el Timer0, salimos
+                      00192 
+                      00193     ; --- INICIO DEL CICLO PID ---
+                      00194     
+                      00195     ; PASO 1: Leer los sensores QTR-8A (Puertos A y B) y calcular "Posicion"
+                      00196     ; [Aquí irá la lógica del ADC y Promedio Ponderado]
+                      00197 
+00005A EC48 F000      00198     CALL Lectura_ADC 
+                      00199     
+                      00200     ; PASO 2: Calcular Error (Error = Setpoint - Posicion)
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00201     ; [Aquí irá una rutina de RESTA de 16 bits]
+                      00202 
+00005E EC69 F000      00203     CALL CALCULAR_ERROR
+                      00204 
+                      00205     ; PASO 3: Calcular Término Derivativo (D = Kd * (Error - Error_Anterior))
+                      00206     ; [Resta y Multiplicación]
+                      00207 
+000062 ECB9 F000      00208     CALL CALCULAR_DERIVATIVO
+                      00209 
+                      00210     ; PASO 4: Calcular Término Proporcional (P = Kp * Error)
+                      00211     ; [Aquí irá una rutina de MULTIPLICACIÓN 8x16 bits]
+                      00212 
+000066 ECA4 F000      00213     CALL CALCULAR_PROPORCIONAL
+                      00214 
+                      00215     ; PASO 5: Sumar términos de Control = P + D
+                      00216     ; [Suma de 16 bits]
+00006A ECFE F000      00217     CALL SUMA_PD
+                      00218 
+                      00219     ; PASO 6: Aplicar el valor de 'Control' a los registros CCPR1L y CCPR2L (PWM)
+                      00220     ; Ajustando la lógica de dirección en PORTD (TB6612FNG)
+00006E EC1C F001      00221     CALL CONTROL_PWM
+                      00222 
+                      00223     ; PASO 7: Preparar para el siguiente ciclo
+                      00224     ; Mover Error actual a Error_Anterior para la próxima derivada
+000072 C024 F026      00225     MOVFF Error_L, Error_Anterior_L
+000076 C025 F027      00226     MOVFF Error_H, Error_Anterior_H
+                      00227 
+                      00228 ; --- FIN DEL CICLO PID ---
+                      00229 
+                      00230     ; Recargar el Timer0 para mantener el tiempo exacto
+                      00231     ; (Valores dependen del tiempo que elijas)
+00007A 0E00           00232     MOVLW 0x00      ; Cargar parte alta del Timer
+00007C 6ED7           00233     MOVWF TMR0H
+00007E 0E00           00234     MOVLW 0x00      ; Cargar parte baja del Timer
+000080 6ED6           00235     MOVWF TMR0L
+                      00236 
+                      00237     ; Limpiar la bandera de interrupción para que pueda volver a ocurrir
+000082 94F2           00238     BCF INTCON, TMR0IF
+                      00239 
+000084                00240 SALIR_INTERRUPCION
+000084 0011           00241     RETFIE FAST         ; Retorna de la interrupción restaurando registros vitales
+                      00242 
+000086                00243 CONFIGURAR_ADC
+                      00244     ; --- ADCON1: Configurar pines analógicos ---
+                      00245     ; PCFG = 0010: Configura desde AN0 hasta AN12 como analógicos.
+                      00246     ; Vref+ y Vref- se conectan internamente a VDD (5V) y VSS (GND).
+000086 0E02           00247     MOVLW b'00000010'
+000088 6EC1           00248     MOVWF ADCON1
+                      00249 
+                      00250     ; --- ADCON2: Formato y Tiempos del ADC ---
+                      00251     ; Bit 7 (ADFM) = 0 -> Justificado a la Izquierda (Solo leeremos ADRESH)
+                      00252     ; Bits 5-3 (ACQT) = 111 -> 20 TAD (Tiempo de adquisición automático máximo)
+                      00253     ; Bits 2-0 (ADCS) = 110 -> Fosc/64 (El reloj correcto si trabajas a 48MHz)
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00008A 0E3E           00254     MOVLW b'00111110'   
+00008C 6EC0           00255     MOVWF ADCON2
+00008E 0012           00256     RETURN
+                      00257 
+                      00258 ; -------------------------------------------------------------------------
+                      00259 ; RUTINA: LEER_CANAL_ADC
+                      00260 ; Entradas: El registro W debe contener el comando del canal a leer.
+                      00261 ; Salidas:  El registro W regresará con el valor del sensor (0 a 255).
+                      00262 ; -------------------------------------------------------------------------
+000090                00263 Lectura_ADC
+                      00264 ; Leer Sensor D1 (Conectado a AN12 - PB0)
+                      00265     ; Canal AN12 = 1100
+000090 0E31           00266     MOVLW b'00110001'   ; Comando para AN12
+000092 EC46 F001      00267     CALL LEER_CANAL_ADC
+000096 6E2A           00268     MOVWF Sens0         ; Guardar resultado en variable
+                      00269 
+                      00270 ; Leer Sensor D2 (Conectado a AN10 - PB1)
+                      00271     ; Canal AN10 = 1010
+000098 0E29           00272     MOVLW b'00101001'   ; Comando para AN10
+00009A EC46 F001      00273     CALL LEER_CANAL_ADC
+00009E 6E2B           00274     MOVWF Sens1         ; Guardar resultado en variable
+                      00275 
+                      00276 ; Leer Sensor D3 (Conectado a AN8 - PB2)
+                      00277     ; Canal AN8 = 1000
+0000A0 0E21           00278     MOVLW b'00100001'   ; Comando para AN8
+0000A2 EC46 F001      00279     CALL LEER_CANAL_ADC
+0000A6 6E2C           00280     MOVWF Sens2         ; Guardar resultado en variable
+                      00281 
+                      00282 
+                      00283 ; Leer Sensor D4 (Conectado a AN11 - PB4)
+                      00284     ; Canal AN11 = 1011
+0000A8 0E2D           00285     MOVLW b'00101101'   ; Comando para AN11
+0000AA EC46 F001      00286     CALL LEER_CANAL_ADC
+0000AE 6E2D           00287     MOVWF Sens3         ; Guardar resultado en variable
+                      00288 
+                      00289 
+                      00290 ; Leer Sensor D5 (Conectado a AN0 - PA0)
+                      00291     ; Canal AN0 = 0000
+0000B0 0E01           00292     MOVLW b'00000001'   ; Comando para AN0
+0000B2 EC46 F001      00293     CALL LEER_CANAL_ADC
+0000B6 6E2E           00294     MOVWF Sens4         ; Guardar resultado en variable
+                      00295 
+                      00296 
+                      00297 ; Leer Sensor D6 (Conectado a AN1 - PA1)
+                      00298     ; Canal AN1 = 0001
+0000B8 0E05           00299     MOVLW b'00000101'   ; Comando para AN1
+0000BA EC46 F001      00300     CALL LEER_CANAL_ADC
+0000BE 6E2F           00301     MOVWF Sens5         ; Guardar resultado en variable
+                      00302 
+                      00303 
+                      00304 ; Leer Sensor D7 (Conectado a AN2 - PA2)
+                      00305     ; Canal AN2 = 0010
+0000C0 0E09           00306     MOVLW b'00001001'   ; Comando para AN2
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0000C2 EC46 F001      00307     CALL LEER_CANAL_ADC
+0000C6 6E30           00308     MOVWF Sens6         ; Guardar resultado en variable
+                      00309 
+                      00310 
+                      00311 ; Leer Sensor D8 (Conectado a AN3 - PA3)
+                      00312     ; Canal AN3 = 0011
+0000C8 0E0D           00313     MOVLW b'00001101'   ; Comando para AN3
+0000CA EC46 F001      00314     CALL LEER_CANAL_ADC
+0000CE 6E31           00315     MOVWF Sens7         ; Guardar resultado en variable
+0000D0 0012           00316     RETURN
+                      00317 
+0000D2                00318 CALCULAR_ERROR
+                      00319     ; 1. Limpiar acumuladores antes de sumar
+0000D2 6A32           00320     CLRF Suma_Der_L
+0000D4 6A33           00321     CLRF Suma_Der_H
+0000D6 6A34           00322     CLRF Suma_Izq_L
+0000D8 6A35           00323     CLRF Suma_Izq_H
+                      00324 
+                      00325     ; ==========================================
+                      00326     ; CÁLCULO DEL LADO DERECHO (S4 a S7)
+                      00327     ; ==========================================
+                      00328     
+                      00329     ; --- Sensor S4 (Peso 10) ---
+0000DA 0E0A           00330     MOVLW .10           ; Cargar el número 10 en decimal (.10) a W
+0000DC 022E           00331     MULWF Sens4         ; Multiplicar W * Sens4. Resultado en PRODH:PRODL
+                      00332     ; Sumar al acumulador Derecho de 16 bits
+0000DE 50F3           00333     MOVF PRODL, W       
+0000E0 2632           00334     ADDWF Suma_Der_L, F ; Suma la parte baja
+0000E2 50F4           00335     MOVF PRODH, W
+0000E4 2233           00336     ADDWFC Suma_Der_H, F; Suma la parte alta CON ACARREO (Carry)
+                      00337 
+                      00338     ; --- Sensor S5 (Peso 20) ---
+0000E6 0E14           00339     MOVLW .20
+0000E8 022F           00340     MULWF Sens5
+0000EA 50F3           00341     MOVF PRODL, W
+0000EC 2632           00342     ADDWF Suma_Der_L, F
+0000EE 50F4           00343     MOVF PRODH, W
+0000F0 2233           00344     ADDWFC Suma_Der_H, F
+                      00345 
+                      00346     ; --- Sensor S6 (Peso 30) ---
+0000F2 0E1E           00347     MOVLW .30
+0000F4 0230           00348     MULWF Sens6
+0000F6 50F3           00349     MOVF PRODL, W
+0000F8 2632           00350     ADDWF Suma_Der_L, F
+0000FA 50F4           00351     MOVF PRODH, W
+0000FC 2233           00352     ADDWFC Suma_Der_H, F
+                      00353 
+                      00354     ; --- Sensor S7 (Peso 40) ---
+0000FE 0E28           00355     MOVLW .40
+000100 0231           00356     MULWF Sens7
+000102 50F3           00357     MOVF PRODL, W
+000104 2632           00358     ADDWF Suma_Der_L, F
+000106 50F4           00359     MOVF PRODH, W
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+000108 2233           00360     ADDWFC Suma_Der_H, F
+                      00361 
+                      00362 ; ==========================================
+                      00363     ; CÁLCULO DEL LADO IZQUIERDO (S0 a S3)
+                      00364     ; ==========================================
+                      00365     ; (Es exactamente la misma estructura que arriba)
+                      00366     
+                      00367     ; --- Sensor S3 (Peso 10) ---
+00010A 0E0A           00368     MOVLW .10
+00010C 022D           00369     MULWF Sens3
+00010E 50F3           00370     MOVF PRODL, W
+000110 2634           00371     ADDWF Suma_Izq_L, F
+000112 50F4           00372     MOVF PRODH, W
+000114 2235           00373     ADDWFC Suma_Izq_H, F
+                      00374 
+                      00375     ; --- Sensor S2 (Peso 20) ---
+000116 0E14           00376     MOVLW .20
+000118 022C           00377     MULWF Sens2
+00011A 50F3           00378     MOVF PRODL, W
+00011C 2634           00379     ADDWF Suma_Izq_L, F
+00011E 50F4           00380     MOVF PRODH, W
+000120 2235           00381     ADDWFC Suma_Izq_H, F
+                      00382 
+                      00383     ; --- Sensor S1 (Peso 30) ---
+000122 0E1E           00384     MOVLW .30
+000124 022B           00385     MULWF Sens1
+000126 50F3           00386     MOVF PRODL, W
+000128 2634           00387     ADDWF Suma_Izq_L, F
+00012A 50F4           00388     MOVF PRODH, W
+00012C 2235           00389     ADDWFC Suma_Izq_H, F
+                      00390 
+                      00391     ; --- Sensor S0 (Peso 40) ---
+00012E 0E28           00392     MOVLW .40
+000130 022A           00393     MULWF Sens0
+000132 50F3           00394     MOVF PRODL, W
+000134 2634           00395     ADDWF Suma_Izq_L, F
+000136 50F4           00396     MOVF PRODH, W
+000138 2235           00397     ADDWFC Suma_Izq_H, F
+                      00398 
+                      00399 ; ==========================================
+                      00400     ; LA RESTA FINAL: Error = Suma_Der - Suma_Izq
+                      00401     ; ==========================================
+00013A 5034           00402     MOVF Suma_Izq_L, W
+00013C 5C32           00403     SUBWF Suma_Der_L, W     ; Resta partes bajas (Suma_Der_L - Suma_Izq_L). Guarda en W
+00013E 6E24           00404     MOVWF Error_L           ; Guarda en tu variable Error_L
+                      00405     
+000140 5035           00406     MOVF Suma_Izq_H, W
+000142 5833           00407     SUBWFB Suma_Der_H, W    ; Resta partes altas CON BORROW (Préstamo). Guarda en W
+000144 6E25           00408     MOVWF Error_H           ; Guarda en tu variable Error_H
+000146 0012           00409     RETURN
+                      00410 
+                      00411 ; =========================================================================
+                      00412 ; SUBRUTINA: CALCULAR_PROPORCIONAL
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00413 ; Propósito: Multiplica Error (16 bits con signo) * Kp (8 bits sin signo)
+                      00414 ; =========================================================================
+000148                00415 CALCULAR_PROPORCIONAL
+                      00416 ; ---------------------------------------------------------------------
+                      00417     ; FASE 1: EXTRACCIÓN DEL SIGNO Y CONVERSIÓN A VALOR ABSOLUTO
+                      00418     ; ---------------------------------------------------------------------
+000148 9038           00419     BCF Banderas, 0         ; Asumimos por defecto que el Error es Positivo (Bit = 0)
+00014A AE25           00420     BTFSS Error_H, 7        ; Revisamos el bit 7 (Bit de Signo) de la parte alta
+00014C D007           00421     BRA FASE_2_MULTIPLICAR  ; Si es 0 (positivo), saltamos directo a multiplicar
+                      00422 
+                      00423     ; Si el programa no saltó, significa que el Error es NEGATIVO.
+00014E 8038           00424     BSF Banderas, 0         ; Levantamos la bandera: ¡Hay que corregir hacia la Izquierda! (Bit = 1)
+                      00425     
+                      00426     ; Convertimos el número negativo a positivo (Operación de Complemento a 2)
+                      00427     ; Matemáticamente es: Invertir todos los bits y sumar 1.
+000150 1E24           00428     COMF Error_L, F         ; Invertir bits de la parte baja
+000152 1E25           00429     COMF Error_H, F         ; Invertir bits de la parte alta
+                      00430     
+000154 0E01           00431     MOVLW 1
+000156 2624           00432     ADDWF Error_L, F        ; Sumamos 1 a la parte baja
+000158 0E00           00433     MOVLW 0
+00015A 2225           00434     ADDWFC Error_H, F       ; Sumamos el acarreo (Carry) a la parte alta si lo hubo
+                      00435 
+00015C                00436 FASE_2_MULTIPLICAR
+                      00437     ; A partir de este punto, Error_H : Error_L es un valor POSITIVO absoluto.
+                      00438     ; La dirección a girar está a salvo guardada en "Banderas, 0".
+                      00439 
+                      00440     ; ---------------------------------------------------------------------
+                      00441     ; FASE 2: MULTIPLICACIÓN 16x8 BITS USANDO HARDWARE (MULWF)
+                      00442     ; ---------------------------------------------------------------------
+                      00443     
+                      00444     ; PASO A: Multiplicar la Parte Baja (Error_L * Kp)
+00015C 5037           00445     MOVF Kp, W              ; Cargar la constante/variable Kp en W
+00015E 0224           00446     MULWF Error_L           ; Multiplicar. El resultado de 16 bits cae en PRODH:PRODL
+                      00447     
+                      00448     ; Guardamos este primer resultado
+000160 CFF3 F039      00449     MOVFF PRODL, Termino_P_L ; La parte baja de P ya está lista
+000164 CFF4 F03A      00450     MOVFF PRODH, Termino_P_H ; Guardamos temporalmente el acarreo en la parte alta de P
+                      00451 
+                      00452     ; PASO B: Multiplicar la Parte Alta (Error_H * Kp)
+000168 5037           00453     MOVF Kp, W
+00016A 0225           00454     MULWF Error_H           ; Multiplicar. Resultado cae nuevamente en PRODH:PRODL
+                      00455     
+                      00456     ; Acomodo matemático cruzado:
+                      00457     ; La parte baja de este nuevo resultado (PRODL) tiene el "peso" de la parte alta.
+                      00458     ; Por lo tanto, se la sumamos a la parte alta que guardamos en el Paso A.
+00016C 50F3           00459     MOVF PRODL, W
+00016E 263A           00460     ADDWF Termino_P_H, F    ; Sumar al registro final Termino_P_H
+                      00461     
+                      00462     ; (Nota: Ignoramos PRODH de esta segunda multiplicación. Asumimos que 
+                      00463     ;  tu Kp estará escalado para que el resultado de 'P' no exceda los 16 bits,
+                      00464     ;  que es el límite natural para los módulos PWM de los motores).
+                      00465 
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+000170 0012           00466     RETURN                  ; Regresamos al lazo PID principal
+                      00467 
+000172                00468 CALCULAR_DERIVATIVO
+                      00469     ; ---------------------------------------------------------------------
+                      00470     ; FASE 1: LA RESTA (Delta Error = Error Actual - Error Anterior)
+                      00471     ; ---------------------------------------------------------------------
+                      00472     ; Restamos las partes bajas (Error_L - Error_Anterior_L)
+000172 5026           00473     MOVF Error_Anterior_L, W
+000174 5C24           00474     SUBWF Error_L, W
+000176 6E3C           00475     MOVWF Delta_Error_L
+                      00476 
+                      00477     ; Restamos las partes altas CON PRÉSTAMO (Borrow)
+000178 5027           00478     MOVF Error_Anterior_H, W
+00017A 5825           00479     SUBWFB Error_H, W
+00017C 6E3D           00480     MOVWF Delta_Error_H
+                      00481 
+                      00482     ; ---------------------------------------------------------------------
+                      00483     ; FASE 2: EXTRACCIÓN DEL SIGNO (El sentido del freno)
+                      00484     ; ---------------------------------------------------------------------
+00017E 9238           00485     BCF Banderas, 1         ; Asumimos que Delta_Error es positivo (Bit 1 = 0)
+000180 AE3D           00486     BTFSS Delta_Error_H, 7  ; Revisamos el bit de signo
+000182 D007           00487     BRA FASE_3_MULTIPLICAR_D ; Si es 0 (positivo), saltamos directo a multiplicar
+                      00488 
+                      00489     ; Si es negativo, levantamos la bandera (Bit 1 = 1)
+000184 8238           00490     BSF Banderas, 1         
+                      00491     
+                      00492     ; Convertimos Delta_Error a positivo (Complemento a 2) para poder multiplicarlo
+000186 1E3C           00493     COMF Delta_Error_L, F   
+000188 1E3D           00494     COMF Delta_Error_H, F   
+00018A 0E01           00495     MOVLW 1
+00018C 263C           00496     ADDWF Delta_Error_L, F  
+00018E 0E00           00497     MOVLW 0
+000190 223D           00498     ADDWFC Delta_Error_H, F 
+                      00499 
+000192                00500 FASE_3_MULTIPLICAR_D
+                      00501     ; ---------------------------------------------------------------------
+                      00502     ; FASE 3: MULTIPLICACIÓN 16x8 BITS (Hardware)
+                      00503     ; ---------------------------------------------------------------------
+                      00504     
+                      00505     ; PASO A: Multiplicar Parte Baja (Delta_Error_L * Kd)
+000192 503B           00506     MOVF Kd, W
+000194 023C           00507     MULWF Delta_Error_L     
+                      00508     
+000196 CFF3 F03E      00509     MOVFF PRODL, Termino_D_L ; Guardamos parte baja final
+00019A CFF4 F03F      00510     MOVFF PRODH, Termino_D_H ; Guardamos el acarreo en la parte alta
+                      00511     
+                      00512     ; PASO B: Multiplicar Parte Alta (Delta_Error_H * Kd)
+00019E 503B           00513     MOVF Kd, W
+0001A0 023D           00514     MULWF Delta_Error_H     
+                      00515     
+                      00516     ; Sumamos el resultado cruzado a la parte alta
+0001A2 50F3           00517     MOVF PRODL, W
+0001A4 263F           00518     ADDWF Termino_D_H, F    
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00519 
+0001A6 0012           00520     RETURN
+                      00521 
+                      00522 ; =========================================================================
+                      00523 ; SUBRUTINA: APLICAR_CONTROL_MOTORES
+                      00524 ; Propósito: Suma/Resta el Control (P+D) a la Velocidad_Base, satura los
+                      00525 ;            límites a 0-255 y actualiza los registros CCP y el Puerto D.
+                      00526 ; =========================================================================
+0001A8                00527 APLICAR_CONTROL_MOTORES
+                      00528 ; 1. Sumar los términos P y D (Asumiendo que ya están calculados y
+                      00529     ;    que la lógica de si se suman o restan entre sí ya se resolvió, 
+                      00530     ;    dando un valor final guardado en "Control_L" y "Control_H", y 
+                      00531     ;    una bandera final de dirección en "Banderas, 2")
+                      00532 
+                      00533     ; 2. Cargar la Velocidad Base a las variables temporales
+0001A8 5040           00534     MOVF Velocidad_Base, W
+0001AA 6E41           00535     MOVWF PWM_Izq_Temp_L
+0001AC 6A42           00536     CLRF PWM_Izq_Temp_H      ; Limpiamos parte alta
+                      00537     
+0001AE 5040           00538     MOVF Velocidad_Base, W
+0001B0 6E43           00539     MOVWF PWM_Der_Temp_L
+0001B2 6A44           00540     CLRF PWM_Der_Temp_H      ; Limpiamos parte alta
+                      00541 
+                      00542     ; ---------------------------------------------------------------------
+                      00543     ; FASE 3: MEZCLA DE MOTORES (MOTOR MIXING)
+                      00544     ; ---------------------------------------------------------------------
+                      00545     ; Revisamos la bandera final de dirección (Bit 2: 0=Der, 1=Izq)
+0001B4 B438           00546     BTFSC Banderas, 2
+0001B6 D009           00547     BRA MEZCLA_GIRA_IZQUIERDA
+                      00548 
+0001B8                00549 MEZCLA_GIRA_DERECHA
+                      00550     ; Gira Derecha -> Motor Izq Acelera, Motor Der Frena
+                      00551     ; PWM_Izq = Velocidad_Base + Control
+0001B8 5028           00552     MOVF Control_L, W
+0001BA 2641           00553     ADDWF PWM_Izq_Temp_L, F
+0001BC 5029           00554     MOVF Control_H, W
+0001BE 2242           00555     ADDWFC PWM_Izq_Temp_H, F
+                      00556 
+                      00557     ; PWM_Der = Velocidad_Base - Control
+0001C0 5028           00558     MOVF Control_L, W
+0001C2 5E43           00559     SUBWF PWM_Der_Temp_L, F
+0001C4 5029           00560     MOVF Control_H, W
+0001C6 5A44           00561     SUBWFB PWM_Der_Temp_H, F
+0001C8 D008           00562     BRA FASE_4_SATURACION
+                      00563 
+0001CA                00564 MEZCLA_GIRA_IZQUIERDA
+                      00565     ; Gira Izquierda -> Motor Izq Frena, Motor Der Acelera
+                      00566     ; PWM_Izq = Velocidad_Base - Control
+0001CA 5028           00567     MOVF Control_L, W
+0001CC 5E41           00568     SUBWF PWM_Izq_Temp_L, F
+0001CE 5029           00569     MOVF Control_H, W
+0001D0 5A42           00570     SUBWFB PWM_Izq_Temp_H, F
+                      00571 
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00572     ; PWM_Der = Velocidad_Base + Control
+0001D2 5028           00573     MOVF Control_L, W
+0001D4 2643           00574     ADDWF PWM_Der_Temp_L, F
+0001D6 5029           00575     MOVF Control_H, W
+0001D8 2244           00576     ADDWFC PWM_Der_Temp_H, F
+                      00577 
+0001DA                00578 FASE_4_SATURACION
+                      00579     ; ---------------------------------------------------------------------
+                      00580     ; FASE 4: SATURACIÓN (CLAMPING) PARA PROTEGER EL PWM (0 a 255)
+                      00581     ; ---------------------------------------------------------------------
+                      00582 
+                      00583     ; --- LÍMITE SUPERIOR (Max 255) ---
+                      00584     ; Si la parte alta (_H) es mayor a 0, significa que el número es mayor a 255.
+                      00585     ; Saturación Motor Izquierdo:
+0001DA 5242           00586     MOVF PWM_Izq_Temp_H, F  ; Actualiza la bandera Z
+0001DC A4D8           00587     BTFSS STATUS, Z         ; ¿Es cero?
+0001DE 6841           00588     SETF PWM_Izq_Temp_L     ; Si no es cero (es >255), fuerza la parte baja a 255 (0xFF)
+                      00589 
+                      00590     ; Saturación Motor Derecho:
+0001E0 5244           00591     MOVF PWM_Der_Temp_H, F
+0001E2 A4D8           00592     BTFSS STATUS, Z
+0001E4 6843           00593     SETF PWM_Der_Temp_L
+                      00594 
+                      00595     ; --- LÍMITE INFERIOR (Min 0) ---
+                      00596     ; En ensamblador, si restaste y dio negativo, el número se volvió enorme 
+                      00597     ; (ej. 0 - 5 = 251 en 8 bits). Pero, en 16 bits, la parte alta (_H) 
+                      00598     ; se llena de unos (0xFF). Usaremos esto para detectar números negativos.
+                      00599     
+                      00600     ; Saturación Inferior Motor Izquierdo:
+0001E6 BE42           00601     BTFSC PWM_Izq_Temp_H, 7 ; Revisa el bit de signo de la parte alta
+0001E8 6A41           00602     CLRF PWM_Izq_Temp_L     ; Si es 1 (negativo), fuerza la velocidad a 0
+                      00603 
+                      00604     ; Saturación Inferior Motor Derecho:
+0001EA BE44           00605     BTFSC PWM_Der_Temp_H, 7
+0001EC 6A43           00606     CLRF PWM_Der_Temp_L
+                      00607 
+                      00608     ; ---------------------------------------------------------------------
+                      00609     ; FASE 5: ESCRITURA EN HARDWARE (EL FINAL DEL CICLO PID)
+                      00610     ; ---------------------------------------------------------------------
+                      00611     
+                      00612     ; 1. Asegurar que ambos motores estén configurados "Hacia Adelante"
+                      00613     ; Recordando tu tabla: PD0/PD1 son AIN, PD2/PD3 son BIN.
+                      00614     ; Para adelante en el TB6612FNG: IN1=1, IN2=0
+0001EE 0E05           00615     MOVLW b'00000101'   ; 0000_0101
+0001F0 6E8C           00616     MOVWF LATD          ; Escribe la dirección de giro
+                      00617 
+                      00618     ; 2. Escribir los valores finales a los registros PWM del PIC
+                      00619     ; (CCPR1L controla el pin RC2, CCPR2L controla el pin RC1)
+0001F2 5041           00620     MOVF PWM_Izq_Temp_L, W
+0001F4 6EBE           00621     MOVWF CCPR1L        ; Actualiza Duty Cycle Motor Izquierdo
+                      00622     
+0001F6 5043           00623     MOVF PWM_Der_Temp_L, W
+0001F8 6EBB           00624     MOVWF CCPR2L        ; Actualiza Duty Cycle Motor Derecho
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00625 
+0001FA 0012           00626     RETURN
+                      00627 
+                      00628 
+0001FC                00629 SUMA_PD
+                      00630 ; =========================================================================
+                      00631 ; PASO 5: CONSOLIDACIÓN DE TÉRMINOS (Control = P + D)
+                      00632 ; =========================================================================
+                      00633 ; Se evalúa si P y D empujan en la misma dirección o en direcciones opuestas.
+                      00634     
+0001FC 5038           00635     MOVF Banderas, W
+0001FE 0B03           00636     ANDLW b'00000011'       ; Aislamos los bits de dirección de P (bit 0) y D (bit 1)
+000200 0A00           00637     XORLW b'00000000'       ; Comprobamos si ambos son 0 (Dirección Derecha)
+000202 E00F           00638     BZ SUMAR_TERMINOS
+                      00639     
+000204 5038           00640     MOVF Banderas, W
+000206 0B03           00641     ANDLW b'00000011'
+000208 0A03           00642     XORLW b'00000011'       ; Comprobamos si ambos son 1 (Dirección Izquierda)
+00020A E00B           00643     BZ SUMAR_TERMINOS
+                      00644 
+00020C                00645 RESTAR_TERMINOS
+                      00646     ; P y D tienen direcciones opuestas. Se restan (P - D). 
+                      00647     ; Se asume que P > D en magnitud para este diseño base.
+00020C 503E           00648     MOVF Termino_D_L, W
+00020E 5C39           00649     SUBWF Termino_P_L, W
+000210 6E28           00650     MOVWF Control_L
+                      00651     
+000212 503F           00652     MOVF Termino_D_H, W
+000214 583A           00653     SUBWFB Termino_P_H, W
+000216 6E29           00654     MOVWF Control_H
+                      00655     
+                      00656     ; La dirección final dominante (Bit 2) será la del término Proporcional
+000218 B038           00657     BTFSC Banderas, 0
+00021A 8438           00658     BSF Banderas, 2         
+00021C A038           00659     BTFSS Banderas, 0
+00021E 9438           00660     BCF Banderas, 2         
+000220 0012           00661     RETURN
+                      00662 
+000222                00663 SUMAR_TERMINOS
+                      00664     ; P y D van en la misma dirección. Se suman las magnitudes de 16 bits.
+000222 503E           00665     MOVF Termino_D_L, W
+000224 2439           00666     ADDWF Termino_P_L, W
+000226 6E28           00667     MOVWF Control_L
+                      00668     
+000228 503F           00669     MOVF Termino_D_H, W
+00022A 203A           00670     ADDWFC Termino_P_H, W
+00022C 6E29           00671     MOVWF Control_H
+                      00672     
+                      00673     ; La dirección final hereda la dirección compartida
+00022E B038           00674     BTFSC Banderas, 0
+000230 8438           00675     BSF Banderas, 2
+000232 A038           00676     BTFSS Banderas, 0
+000234 9438           00677     BCF Banderas, 2
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+000236 0012           00678     RETURN
+                      00679 
+000238                00680 CONTROL_PWM
+                      00681 ; =========================================================================
+                      00682 ; PASO 6: ESCRITURA EN HARDWARE Y MEZCLA DE MOTORES
+                      00683 ; =========================================================================
+                      00684 ; Configuración inicial de la Velocidad Base en variables temporales
+000238 5040           00685     MOVF Velocidad_Base, W
+00023A 6E41           00686     MOVWF PWM_Izq_Temp_L
+00023C 6A42           00687     CLRF PWM_Izq_Temp_H
+00023E 5040           00688     MOVF Velocidad_Base, W
+000240 6E43           00689     MOVWF PWM_Der_Temp_L
+000242 6A44           00690     CLRF PWM_Der_Temp_H
+                      00691 
+                      00692     ; Bifurcación basada en la bandera final (Bit 2)
+000244 B438           00693     BTFSC Banderas, 2
+000246 D009           00694     BRA MEZCLA_IZQ
+                      00695 
+000248                00696 MEZCLA_DER
+                      00697     ; Motor Izquierdo (+) y Motor Derecho (-)
+000248 5028           00698     MOVF Control_L, W
+00024A 2641           00699     ADDWF PWM_Izq_Temp_L, F
+00024C 5029           00700     MOVF Control_H, W
+00024E 2242           00701     ADDWFC PWM_Izq_Temp_H, F
+                      00702 
+000250 5028           00703     MOVF Control_L, W
+000252 5E43           00704     SUBWF PWM_Der_Temp_L, F
+000254 5029           00705     MOVF Control_H, W
+000256 5A44           00706     SUBWFB PWM_Der_Temp_H, F
+000258 D008           00707     BRA SATURACION_HARDWARE
+                      00708 
+00025A                00709 MEZCLA_IZQ
+                      00710     ; Motor Izquierdo (-) y Motor Derecho (+)
+00025A 5028           00711     MOVF Control_L, W
+00025C 5E41           00712     SUBWF PWM_Izq_Temp_L, F
+00025E 5029           00713     MOVF Control_H, W
+000260 5A42           00714     SUBWFB PWM_Izq_Temp_H, F
+                      00715 
+000262 5028           00716     MOVF Control_L, W
+000264 2643           00717     ADDWF PWM_Der_Temp_L, F
+000266 5029           00718     MOVF Control_H, W
+000268 2244           00719     ADDWFC PWM_Der_Temp_H, F
+                      00720 
+00026A                00721 SATURACION_HARDWARE
+                      00722     ; Límite Superior: Prevención de Overflow (>255)
+00026A 5242           00723     MOVF PWM_Izq_Temp_H, F
+00026C A4D8           00724     BTFSS STATUS, Z
+00026E 6841           00725     SETF PWM_Izq_Temp_L
+000270 5244           00726     MOVF PWM_Der_Temp_H, F
+000272 A4D8           00727     BTFSS STATUS, Z
+000274 6843           00728     SETF PWM_Der_Temp_L
+                      00729 
+                      00730     ; Límite Inferior: Prevención de Underflow (<0)
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+000276 BE42           00731     BTFSC PWM_Izq_Temp_H, 7
+000278 6A41           00732     CLRF PWM_Izq_Temp_L
+00027A BE44           00733     BTFSC PWM_Der_Temp_H, 7
+00027C 6A43           00734     CLRF PWM_Der_Temp_L
+                      00735 
+                      00736     ; Dirección de Puente H TB6612FNG (Hacia Adelante)
+00027E 0E05           00737     MOVLW b'00000101'   
+000280 6E8C           00738     MOVWF LATD          
+                      00739 
+                      00740     ; Transmisión a registros CCP
+000282 5041           00741     MOVF PWM_Izq_Temp_L, W
+000284 6EBE           00742     MOVWF CCPR1L        
+000286 5043           00743     MOVF PWM_Der_Temp_L, W
+000288 6EBB           00744     MOVWF CCPR2L
+00028A 0012           00745     RETURN
+                      00746 
+00028C                00747 LEER_CANAL_ADC
+                      00748     ; 1. Seleccionar el canal y encender el módulo ADC
+00028C 6EC2           00749     MOVWF ADCON0        
+                      00750 
+                      00751     ; 2. Iniciar la conversión (Poner el bit GO/DONE en 1)
+00028E 82C2           00752     BSF ADCON0, GO_DONE 
+                      00753 
+000290                00754 ESPERAR_ADC
+                      00755     ; 3. Esperar a que el hardware termine (El bit GO/DONE se hará 0 solo)
+000290 B2C2           00756     BTFSC ADCON0, GO_DONE
+000292 D7FE           00757     BRA ESPERAR_ADC     ; Si sigue en 1, repite esta línea
+                      00758 
+                      00759     ; 4. Guardar el resultado
+                      00760     ; Como está justificado a la izquierda, ignoramos ADRESL y leemos ADRESH
+000294 50C4           00761     MOVF ADRESH, W      ; Movemos la lectura a W para devolverla
+000296 0012           00762     RETURN
+                      00763 
+000298                00764 CONFIGURAR_PWM
+                      00765 ; =========================================================================
+                      00766 ; SUBRUTINA: CONFIGURAR_PWM
+                      00767 ; Propósito: Inicializa Timer2 y los módulos CCP1/CCP2 para generar señales 
+                      00768 ;            PWM a 46.8 kHz con resolución de 8 bits.
+                      00769 ; =========================================================================
+                      00770 ; 1. Configurar los pines físicos como salidas (El paso vital)
+                      00771     ; Según tu tabla: RC1 es PWM_Motor_Derecho, RC2 es PWM_Motor_Izquierdo
+000298 9294           00772     BCF TRISC, 1        ; Limpiamos el bit 1 de TRISC (RC1 como salida)
+00029A 9494           00773     BCF TRISC, 2        ; Limpiamos el bit 2 de TRISC (RC2 como salida)
+                      00774 
+                      00775     ; 2. Establecer la Frecuencia (El periodo de la señal)
+                      00776     ; Cargar 0xFF (255) nos da la resolución de 8 bits exacta para tus cálculos
+00029C 0EFF           00777     MOVLW 0xFF
+00029E 6ECB           00778     MOVWF PR2
+                      00779 
+                      00780     ; 3. Inicializar el Duty Cycle a 0 (Seguridad ante todo)
+                      00781     ; Esto asegura que el robot no arranque disparado apenas lo enciendes
+0002A0 6ABE           00782     CLRF CCPR1L         ; Motor Izquierdo a 0%
+0002A2 6ABB           00783     CLRF CCPR2L         ; Motor Derecho a 0%
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00784 
+                      00785     ; 4. Configurar los módulos CCP en modo PWM estándar
+                      00786     ; Los bits 3-0 en '1100' encienden la función PWM
+                      00787     ; Los bits 5-4 en '00' son los bits menos significativos del Duty Cycle (los ignoramos)
+0002A4 0E0C           00788     MOVLW b'00001100'
+0002A6 6EBD           00789     MOVWF CCP1CON       
+0002A8 6EBA           00790     MOVWF CCP2CON
+                      00791 
+                      00792     ; 5. Encender el Motor del PWM (Timer2)
+                      00793     ; Bit 2 (TMR2ON) = 1 -> Enciende el Timer2
+                      00794     ; Bits 1-0 (T2CKPS) = 00 -> Prescaler de 1:1
+0002AA 0E04           00795     MOVLW b'00000100'
+0002AC 6ECA           00796     MOVWF T2CON
+                      00797 
+0002AE 0012           00798     RETURN
+                      00799 
+                      00800 
+0002B0                00801 RETARDO_DEBOUNCE
+                      00802     ; Retardo simple de aprox 20ms a 48MHz para absorber el ruido mecánico
+0002B0 0E64           00803     MOVLW .100
+0002B2 6E46           00804     MOVWF contador2
+0002B4                00805 L_Debounce2
+0002B4 0EFA           00806     MOVLW .250
+0002B6 6E45           00807     MOVWF contador1
+0002B8                00808 L_Debounce1
+0002B8 2E45           00809     DECFSZ contador1, F
+0002BA D7FE           00810     BRA L_Debounce1
+0002BC 2E46           00811     DECFSZ contador2, F
+0002BE D7FA           00812     BRA L_Debounce2
+0002C0 0012           00813     RETURN
+                      00814 
+                      00815     END
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 17
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+A                                 00000000
+ABDEN                             00000000
+ABDOVF                            00000007
+ACCESS                            00000000
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ACQT0                             00000003
+ACQT1                             00000004
+ACQT2                             00000005
+ACTVIE                            00000002
+ACTVIF                            00000002
+ADCON0                            00000FC2
+ADCON1                            00000FC1
+ADCON2                            00000FC0
+ADCS0                             00000000
+ADCS1                             00000001
+ADCS2                             00000002
+ADDEN                             00000003
+ADDR0                             00000000
+ADDR1                             00000001
+ADDR2                             00000002
+ADDR3                             00000003
+ADDR4                             00000004
+ADDR5                             00000005
+ADDR6                             00000006
+ADEN                              00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADIP                              00000006
+ADON                              00000000
+ADRES                             00000FC3
+ADRESH                            00000FC4
+ADRESL                            00000FC3
+AN0                               00000000
+AN1                               00000001
+AN2                               00000002
+AN3                               00000003
+AN4                               00000005
+APLICAR_CONTROL_MOTORES           000001A8
+BANKED                            00000001
+BAUDCON                           00000FB8
+BAUDCTL                           00000FB8
+BCLIE                             00000003
+BCLIF                             00000003
+BCLIP                             00000003
+BF                                00000000
+BGST                              00000005
+BOR                               00000000
+BRG16                             00000003
+BRGH                              00000002
+BSR                               00000FE0
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 18
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+BTOEE                             00000004
+BTOEF                             00000004
+BTSEE                             00000007
+BTSEF                             00000007
+BUCLE_PRINCIPAL                   00000042
+Banderas                          00000038
+C                                 00000000
+C1INV                             00000004
+C1OUT                             00000006
+C2INV                             00000005
+C2OUT                             00000007
+CALCULAR_DERIVATIVO               00000172
+CALCULAR_ERROR                    000000D2
+CALCULAR_PROPORCIONAL             00000148
+CCP1                              00000002
+CCP1AS                            00000FB6
+CCP1CON                           00000FBD
+CCP1DEL                           00000FB7
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1IP                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP2CON                           00000FBA
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2IP                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCPR1                             00000FBE
+CCPR1H                            00000FBF
+CCPR1L                            00000FBE
+CCPR2                             00000FBB
+CCPR2H                            00000FBC
+CCPR2L                            00000FBB
+CFGS                              00000006
+CHS0                              00000002
+CHS1                              00000003
+CHS2                              00000004
+CHS3                              00000005
+CIS                               00000003
+CK                                00000006
+CK1SPP                            00000000
+CK2SPP                            00000001
+CKE                               00000006
+CKP                               00000004
+CLK1EN                            00000004
+CLKCFG0                           00000006
+CLKCFG1                           00000007
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 19
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             00000FB4
+CMIE                              00000006
+CMIF                              00000006
+CMIP                              00000006
+CONFIGURACION                     00000020
+CONFIGURAR_ADC                    00000086
+CONFIGURAR_PWM                    00000298
+CONTROL_PWM                       00000238
+CRC16EE                           00000002
+CRC16EF                           00000002
+CRC5EE                            00000001
+CRC5EF                            00000001
+CREN                              00000004
+CSEN                              00000005
+CSRC                              00000007
+CVR0                              00000000
+CVR1                              00000001
+CVR2                              00000002
+CVR3                              00000003
+CVRCON                            00000FB5
+CVREF                             00000004
+CVREN                             00000007
+CVROE                             00000006
+CVRR                              00000005
+CVRSS                             00000004
+Control_H                         00000029
+Control_L                         00000028
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+DC1B0                             00000004
+DC1B1                             00000005
+DC2B0                             00000004
+DC2B1                             00000005
+DDRA                              TRISA
+DDRB                              TRISB
+DDRC                              TRISC
+DDRD                              TRISD
+DDRE                              TRISE
+DFN8EE                            00000003
+DFN8EF                            00000003
+DIR                               00000002
+DONE                              00000001
+D_A                               00000005
+D_NOT_A                           00000005
+Delta_Error_H                     0000003D
+Delta_Error_L                     0000003C
+ECCP1AS                           00000FB6
+ECCP1CON                          00000FBD
+ECCP1DEL                          00000FB7
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 20
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ECCPAS0                           00000004
+ECCPAS1                           00000005
+ECCPAS2                           00000006
+ECCPASE                           00000007
+EEADR                             00000FA9
+EECON1                            00000FA6
+EECON2                            00000FA7
+EEDATA                            00000FA8
+EEIE                              00000004
+EEIF                              00000004
+EEIP                              00000004
+EEPGD                             00000007
+ENDP0                             00000003
+ENDP1                             00000004
+ENDP2                             00000005
+ENDP3                             00000006
+EPCONDIS                          00000003
+EPHSHK                            00000004
+EPINEN                            00000001
+EPOUTEN                           00000002
+EPSTALL                           00000000
+ESPERAR_ADC                       00000290
+ESPERAR_LIBERACION                0000004E
+Error_Anterior_H                  00000027
+Error_Anterior_L                  00000026
+Error_H                           00000025
+Error_L                           00000024
+FASE_2_MULTIPLICAR                0000015C
+FASE_3_MULTIPLICAR_D              00000192
+FASE_4_SATURACION                 000001DA
+FAST                              00000001
+FERR                              00000002
+FLTS                              00000002
+FREE                              00000004
+FRM0                              00000000
+FRM1                              00000001
+FRM10                             00000002
+FRM2                              00000002
+FRM3                              00000003
+FRM4                              00000004
+FRM5                              00000005
+FRM6                              00000006
+FRM7                              00000007
+FRM8                              00000000
+FRM9                              00000001
+FSEN                              00000002
+FSR0                              00000000
+FSR0H                             00000FEA
+FSR0L                             00000FE9
+FSR1                              00000001
+FSR1H                             00000FE2
+FSR1L                             00000FE1
+FSR2                              00000002
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 21
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+FSR2H                             00000FDA
+FSR2L                             00000FD9
+GCEN                              00000007
+GIE                               00000007
+GIEH                              00000007
+GIEL                              00000006
+GIE_GIEH                          00000007
+GO                                00000001
+GO_DONE                           00000001
+GO_NOT_DONE                       00000001
+HLVDCON                           00000FD2
+HLVDEN                            00000004
+HLVDIE                            00000002
+HLVDIF                            00000002
+HLVDIN                            00000005
+HLVDIP                            00000002
+HLVDL0                            00000000
+HLVDL1                            00000001
+HLVDL2                            00000002
+HLVDL3                            00000003
+I2C_DAT                           00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+IDLEIE                            00000004
+IDLEIF                            00000004
+IDLEN                             00000007
+INDF0                             00000FEF
+INDF1                             00000FE7
+INDF2                             00000FDF
+INT0                              00000000
+INT0E                             00000004
+INT0F                             00000001
+INT0IE                            00000004
+INT0IF                            00000001
+INT1                              00000001
+INT1E                             00000003
+INT1F                             00000000
+INT1IE                            00000003
+INT1IF                            00000000
+INT1IP                            00000006
+INT1P                             00000006
+INT2                              00000002
+INT2E                             00000004
+INT2F                             00000001
+INT2IE                            00000004
+INT2IF                            00000001
+INT2IP                            00000007
+INT2P                             00000007
+INTCON                            00000FF2
+INTCON2                           00000FF1
+INTCON3                           00000FF0
+INTEDG0                           00000006
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 22
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+INTEDG1                           00000005
+INTEDG2                           00000004
+INTSRC                            00000007
+IOFS                              00000002
+IPEN                              00000007
+IPR1                              00000F9F
+IPR2                              00000FA2
+IRCF0                             00000004
+IRCF1                             00000005
+IRCF2                             00000006
+IRVST                             00000005
+IVRST                             00000005
+Kd                                0000003B
+Kp                                00000037
+LATA                              00000F89
+LATA0                             00000000
+LATA1                             00000001
+LATA2                             00000002
+LATA3                             00000003
+LATA4                             00000004
+LATA5                             00000005
+LATA6                             00000006
+LATB                              00000F8A
+LATB0                             00000000
+LATB1                             00000001
+LATB2                             00000002
+LATB3                             00000003
+LATB4                             00000004
+LATB5                             00000005
+LATB6                             00000006
+LATB7                             00000007
+LATC                              00000F8B
+LATC0                             00000000
+LATC1                             00000001
+LATC2                             00000002
+LATC6                             00000006
+LATC7                             00000007
+LATD                              00000F8C
+LATD0                             00000000
+LATD1                             00000001
+LATD2                             00000002
+LATD3                             00000003
+LATD4                             00000004
+LATD5                             00000005
+LATD6                             00000006
+LATD7                             00000007
+LATE                              00000F8D
+LATE0                             00000000
+LATE1                             00000001
+LATE2                             00000002
+LAZO_CARRERA                      00000054
+LEER_CANAL_ADC                    0000028C
+LVDCON                            00000FD2
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 23
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+LVDEN                             00000004
+LVDIE                             00000002
+LVDIF                             00000002
+LVDIN                             00000005
+LVDIP                             00000002
+LVDL0                             00000000
+LVDL1                             00000001
+LVDL2                             00000002
+LVDL3                             00000003
+LVV0                              00000000
+LVV1                              00000001
+LVV2                              00000002
+LVV3                              00000003
+L_Debounce1                       000002B8
+L_Debounce2                       000002B4
+Lectura_ADC                       00000090
+MEZCLA_DER                        00000248
+MEZCLA_GIRA_DERECHA               000001B8
+MEZCLA_GIRA_IZQUIERDA             000001CA
+MEZCLA_IZQ                        0000025A
+N                                 00000004
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BOR                           00000000
+NOT_DONE                          00000001
+NOT_IPEN                          00000007
+NOT_PD                            00000002
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RI                            00000004
+NOT_T1SYNC                        00000002
+NOT_T3SYNC                        00000002
+NOT_TO                            00000003
+NOT_W                             00000002
+NOT_WRITE                         00000002
+OERR                              00000001
+OESPP                             00000002
+OSC2                              00000006
+OSCCON                            00000FD3
+OSCFIE                            00000007
+OSCFIF                            00000007
+OSCFIP                            00000007
+OSCTUNE                           00000F9B
+OSTS                              00000003
+OV                                00000003
+P                                 00000004
+P1A                               00000002
+P1M0                              00000006
+P1M1                              00000007
+PC                                00000FF9
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 24
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PCFG3                             00000003
+PCL                               00000FF9
+PCLATH                            00000FFA
+PCLATU                            00000FFB
+PD                                00000002
+PDC0                              00000000
+PDC1                              00000001
+PDC2                              00000002
+PDC3                              00000003
+PDC4                              00000004
+PDC5                              00000005
+PDC6                              00000006
+PEIE                              00000006
+PEIE_GIEL                         00000006
+PEN                               00000002
+PGC                               00000006
+PGD                               00000007
+PGM                               00000005
+PIDEE                             00000000
+PIDEF                             00000000
+PIE1                              00000F9D
+PIE2                              00000FA0
+PIR1                              00000F9E
+PIR2                              00000FA1
+PKTDIS                            00000004
+PLUSW0                            00000FEB
+PLUSW1                            00000FE3
+PLUSW2                            00000FDB
+POR                               00000001
+PORTA                             00000F80
+PORTB                             00000F81
+PORTC                             00000F82
+PORTD                             00000F83
+PORTE                             00000F84
+POSTDEC0                          00000FED
+POSTDEC1                          00000FE5
+POSTDEC2                          00000FDD
+POSTINC0                          00000FEE
+POSTINC1                          00000FE6
+POSTINC2                          00000FDE
+PPB0                              00000000
+PPB1                              00000001
+PPBI                              00000001
+PPBRST                            00000006
+PR2                               00000FCB
+PREINC0                           00000FEC
+PREINC1                           00000FE4
+PREINC2                           00000FDC
+PROD                              00000FF3
+PRODH                             00000FF4
+PRODL                             00000FF3
+PRSEN                             00000007
+PSA                               00000003
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 25
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PSSAC0                            00000002
+PSSAC1                            00000003
+PSSBD0                            00000000
+PSSBD1                            00000001
+PWM_Der_Temp_H                    00000044
+PWM_Der_Temp_L                    00000043
+PWM_Izq_Temp_H                    00000042
+PWM_Izq_Temp_L                    00000041
+Peso                              00000036
+Posicion_H                        00000021
+Posicion_L                        00000020
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RA6                               00000006
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RBIP                              00000000
+RBPU                              00000007
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RCEN                              00000003
+RCIDL                             00000006
+RCIE                              00000005
+RCIF                              00000005
+RCIP                              00000005
+RCMT                              00000006
+RCON                              00000FD0
+RCREG                             00000FAE
+RCSTA                             00000FAB
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD16                              00000007
+RD2                               00000002
+RD3                               00000003
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 26
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RDPU                              00000007
+RDSPP                             00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+RE3                               00000003
+READ_WRITE                        00000002
+RESTAR_TERMINOS                   0000020C
+RESUME                            00000002
+RETARDO_DEBOUNCE                  000002B0
+RI                                00000004
+RSEN                              00000001
+RUTINA_PID                        00000056
+RX                                00000007
+RX9                               00000006
+RX9D                              00000000
+RXDTP                             00000005
+R_NOT_W                           00000002
+R_W                               00000002
+S                                 00000003
+SALIR_INTERRUPCION                00000084
+SATURACION_HARDWARE               0000026A
+SBOREN                            00000006
+SCKP                              00000004
+SCS0                              00000000
+SCS1                              00000001
+SE0                               00000005
+SEN                               00000000
+SENDB                             00000003
+SMP                               00000007
+SOFIE                             00000006
+SOFIF                             00000006
+SPBRG                             00000FAF
+SPBRGH                            00000FB0
+SPEN                              00000007
+SPP0                              00000000
+SPP1                              00000001
+SPP2                              00000002
+SPP3                              00000003
+SPP4                              00000004
+SPP5                              00000005
+SPP6                              00000006
+SPP7                              00000007
+SPPBUSY                           00000004
+SPPCFG                            00000F63
+SPPCON                            00000F65
+SPPDATA                           00000F62
+SPPEN                             00000000
+SPPEPS                            00000F64
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 27
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SPPIE                             00000007
+SPPIF                             00000007
+SPPIP                             00000007
+SPPOWN                            00000001
+SREN                              00000005
+SSPADD                            00000FC8
+SSPBUF                            00000FC9
+SSPCON1                           00000FC6
+SSPCON2                           00000FC5
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPIP                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000FC7
+STALLIE                           00000005
+STALLIF                           00000005
+STATUS                            00000FD8
+STKFUL                            00000007
+STKPTR                            00000FFC
+STKPTR0                           00000000
+STKPTR1                           00000001
+STKPTR2                           00000002
+STKPTR3                           00000003
+STKPTR4                           00000004
+STKUNF                            00000006
+SUMAR_TERMINOS                    00000222
+SUMA_PD                           000001FC
+SUSPND                            00000001
+SWDTE                             00000000
+SWDTEN                            00000000
+SYNC                              00000004
+Sens0                             0000002A
+Sens1                             0000002B
+Sens2                             0000002C
+Sens3                             0000002D
+Sens4                             0000002E
+Sens5                             0000002F
+Sens6                             00000030
+Sens7                             00000031
+Setpoint_H                        00000023
+Setpoint_L                        00000022
+Suma_Der_H                        00000033
+Suma_Der_L                        00000032
+Suma_Izq_H                        00000035
+Suma_Izq_L                        00000034
+T08BIT                            00000006
+T0CKI                             00000004
+T0CON                             00000FD5
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 28
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0IP                              00000002
+T0PS0                             00000000
+T0PS1                             00000001
+T0PS2                             00000002
+T0SE                              00000004
+T13CKI                            00000000
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000FCD
+T1OSCEN                           00000003
+T1OSI                             00000001
+T1OSO                             00000000
+T1RUN                             00000006
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000FCA
+T2OUTPS0                          00000003
+T2OUTPS1                          00000004
+T2OUTPS2                          00000005
+T2OUTPS3                          00000006
+T3CCP1                            00000003
+T3CCP2                            00000006
+T3CKPS0                           00000004
+T3CKPS1                           00000005
+T3CON                             00000FB1
+T3NSYNC                           00000002
+T3SYNC                            00000002
+TABLAT                            00000FF5
+TBLPTR                            00000FF6
+TBLPTRH                           00000FF7
+TBLPTRL                           00000FF6
+TBLPTRU                           00000FF8
+TMR0H                             00000FD7
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR0IP                            00000002
+TMR0L                             00000FD6
+TMR0ON                            00000007
+TMR1CS                            00000001
+TMR1H                             00000FCF
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1IP                            00000000
+TMR1L                             00000FCE
+TMR1ON                            00000000
+TMR2                              00000FCC
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2IP                            00000001
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 29
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TMR2ON                            00000002
+TMR3CS                            00000001
+TMR3H                             00000FB3
+TMR3IE                            00000001
+TMR3IF                            00000001
+TMR3IP                            00000001
+TMR3L                             00000FB2
+TMR3ON                            00000000
+TO                                00000003
+TOS                               00000FFD
+TOSH                              00000FFE
+TOSL                              00000FFD
+TOSU                              00000FFF
+TRISA                             00000F92
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISA6                            00000006
+TRISB                             00000F93
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000F94
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000F95
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000F96
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TRNIE                             00000003
+TRNIF                             00000003
+TUN0                              00000000
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 30
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TX                                00000006
+TX9                               00000006
+TX9D                              00000000
+TXCKP                             00000004
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXIP                              00000004
+TXREG                             00000FAD
+TXSTA                             00000FAC
+Termino_D_H                       0000003F
+Termino_D_L                       0000003E
+Termino_P_H                       0000003A
+Termino_P_L                       00000039
+UA                                00000001
+UADDR                             00000F6E
+UCFG                              00000F6F
+UCON                              00000F6D
+UEIE                              00000F6B
+UEIR                              00000F6A
+UEP0                              00000F70
+UEP1                              00000F71
+UEP10                             00000F7A
+UEP11                             00000F7B
+UEP12                             00000F7C
+UEP13                             00000F7D
+UEP14                             00000F7E
+UEP15                             00000F7F
+UEP2                              00000F72
+UEP3                              00000F73
+UEP4                              00000F74
+UEP5                              00000F75
+UEP6                              00000F76
+UEP7                              00000F77
+UEP8                              00000F78
+UEP9                              00000F79
+UERRIE                            00000001
+UERRIF                            00000001
+UFRM                              00000F66
+UFRMH                             00000F67
+UFRML                             00000F66
+UIE                               00000F69
+UIR                               00000F68
+UOEMON                            00000006
+UPUEN                             00000004
+URSTIE                            00000000
+URSTIF                            00000000
+USBEN                             00000003
+USBIE                             00000005
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 31
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+USBIF                             00000005
+USBIP                             00000005
+USTAT                             00000F6C
+UTEYE                             00000007
+UTRDIS                            00000003
+VCFG0                             00000004
+VCFG1                             00000005
+VDIRMAG                           00000007
+VREFM                             00000002
+VREFP                             00000003
+Velocidad_Base                    00000040
+W                                 00000000
+WCOL                              00000007
+WDTCON                            00000FD1
+WR                                00000001
+WREG                              00000FE8
+WREN                              00000002
+WRERR                             00000003
+WRSPP                             00000006
+WS0                               00000000
+WS1                               00000001
+WS2                               00000002
+WS3                               00000003
+WUE                               00000001
+Z                                 00000002
+_BORV_0_2L                        000000E7
+_BORV_1_2L                        000000EF
+_BORV_2_2L                        000000F7
+_BORV_3_2L                        000000FF
+_BOR_OFF_2L                       000000F9
+_BOR_ON_2L                        000000FF
+_BOR_ON_ACTIVE_2L                 000000FD
+_BOR_SOFT_2L                      000000FB
+_CCP2MX_OFF_3H                    000000FE
+_CCP2MX_ON_3H                     000000FF
+_CONFIG1H                         00300001
+_CONFIG1L                         00300000
+_CONFIG2H                         00300003
+_CONFIG2L                         00300002
+_CONFIG3H                         00300005
+_CONFIG4L                         00300006
+_CONFIG5H                         00300009
+_CONFIG5L                         00300008
+_CONFIG6H                         0030000B
+_CONFIG6L                         0030000A
+_CONFIG7H                         0030000D
+_CONFIG7L                         0030000C
+_CP0_OFF_5L                       000000FF
+_CP0_ON_5L                        000000FE
+_CP1_OFF_5L                       000000FF
+_CP1_ON_5L                        000000FD
+_CP2_OFF_5L                       000000FF
+_CP2_ON_5L                        000000FB
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 32
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_CP3_OFF_5L                       000000FF
+_CP3_ON_5L                        000000F7
+_CPB_OFF_5H                       000000FF
+_CPB_ON_5H                        000000BF
+_CPD_OFF_5H                       000000FF
+_CPD_ON_5H                        0000007F
+_CPUDIV_OSC1_PLL2_1L              000000E7
+_CPUDIV_OSC2_PLL3_1L              000000EF
+_CPUDIV_OSC3_PLL4_1L              000000F7
+_CPUDIV_OSC4_PLL6_1L              000000FF
+_DEBUG_OFF_4L                     000000FF
+_DEBUG_ON_4L                      0000007F
+_DEVID1                           003FFFFE
+_DEVID2                           003FFFFF
+_EBTR0_OFF_7L                     000000FF
+_EBTR0_ON_7L                      000000FE
+_EBTR1_OFF_7L                     000000FF
+_EBTR1_ON_7L                      000000FD
+_EBTR2_OFF_7L                     000000FF
+_EBTR2_ON_7L                      000000FB
+_EBTR3_OFF_7L                     000000FF
+_EBTR3_ON_7L                      000000F7
+_EBTRB_OFF_7H                     000000FF
+_EBTRB_ON_7H                      000000BF
+_FCMEN_OFF_1H                     000000BF
+_FCMEN_ON_1H                      000000FF
+_FOSC_ECIO_EC_1H                  000000F4
+_FOSC_ECPLLIO_EC_1H               000000F6
+_FOSC_ECPLL_EC_1H                 000000F7
+_FOSC_EC_EC_1H                    000000F5
+_FOSC_HSPLL_HS_1H                 000000FE
+_FOSC_HS_1H                       000000FC
+_FOSC_INTOSCIO_EC_1H              000000F8
+_FOSC_INTOSC_EC_1H                000000F9
+_FOSC_INTOSC_HS_1H                000000FB
+_FOSC_INTOSC_XT_1H                000000FA
+_FOSC_XTPLL_XT_1H                 000000F2
+_FOSC_XT_XT_1H                    000000F0
+_ICPRT_OFF_4L                     000000DF
+_ICPRT_ON_4L                      000000FF
+_IDLOC0                           00200000
+_IDLOC1                           00200001
+_IDLOC2                           00200002
+_IDLOC3                           00200003
+_IDLOC4                           00200004
+_IDLOC5                           00200005
+_IDLOC6                           00200006
+_IDLOC7                           00200007
+_IESO_OFF_1H                      0000007F
+_IESO_ON_1H                       000000FF
+_LPT1OSC_OFF_3H                   000000FB
+_LPT1OSC_ON_3H                    000000FF
+_LVP_OFF_4L                       000000FB
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 33
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_LVP_ON_4L                        000000FF
+_MCLRE_OFF_3H                     0000007F
+_MCLRE_ON_3H                      000000FF
+_PBADEN_OFF_3H                    000000FD
+_PBADEN_ON_3H                     000000FF
+_PLLDIV_10_1L                     000000FE
+_PLLDIV_12_1L                     000000FF
+_PLLDIV_1_1L                      000000F8
+_PLLDIV_2_1L                      000000F9
+_PLLDIV_3_1L                      000000FA
+_PLLDIV_4_1L                      000000FB
+_PLLDIV_5_1L                      000000FC
+_PLLDIV_6_1L                      000000FD
+_PWRT_OFF_2L                      000000FF
+_PWRT_ON_2L                       000000FE
+_STVREN_OFF_4L                    000000FE
+_STVREN_ON_4L                     000000FF
+_USBDIV_1_1L                      000000DF
+_USBDIV_2_1L                      000000FF
+_VREGEN_OFF_2L                    000000DF
+_VREGEN_ON_2L                     000000FF
+_WDTPS_1024_2H                    000000F5
+_WDTPS_128_2H                     000000EF
+_WDTPS_16384_2H                   000000FD
+_WDTPS_16_2H                      000000E9
+_WDTPS_1_2H                       000000E1
+_WDTPS_2048_2H                    000000F7
+_WDTPS_256_2H                     000000F1
+_WDTPS_2_2H                       000000E3
+_WDTPS_32768_2H                   000000FF
+_WDTPS_32_2H                      000000EB
+_WDTPS_4096_2H                    000000F9
+_WDTPS_4_2H                       000000E5
+_WDTPS_512_2H                     000000F3
+_WDTPS_64_2H                      000000ED
+_WDTPS_8192_2H                    000000FB
+_WDTPS_8_2H                       000000E7
+_WDT_OFF_2H                       000000FE
+_WDT_ON_2H                        000000FF
+_WRT0_OFF_6L                      000000FF
+_WRT0_ON_6L                       000000FE
+_WRT1_OFF_6L                      000000FF
+_WRT1_ON_6L                       000000FD
+_WRT2_OFF_6L                      000000FF
+_WRT2_ON_6L                       000000FB
+_WRT3_OFF_6L                      000000FF
+_WRT3_ON_6L                       000000F7
+_WRTB_OFF_6H                      000000FF
+_WRTB_ON_6H                       000000BF
+_WRTC_OFF_6H                      000000FF
+_WRTC_ON_6H                       000000DF
+_WRTD_OFF_6H                      000000FF
+_WRTD_ON_6H                       0000007F
+MPASM  5.39                           PID.ASM   5-31-2026  18:34:27         PAGE 34
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_XINST_OFF_4L                     000000BF
+_XINST_ON_4L                      000000FF
+__18F4550                         00000001
+contador1                         00000045
+contador2                         00000046
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+0000 : XXXX----XXXX---- ---------------- XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0040 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0080 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+00C0 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0100 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0140 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0180 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+01C0 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0200 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0240 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0280 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+02C0 : XX-------------- ---------------- ---------------- ----------------
+0000 : XXXX-XX-XXXXXX-- ---------------- ---------------- ----------------
+
+All other memory blocks unused.
+
+Program Memory Bytes Used:   694
+Program Memory Bytes Free: 32074
+
+
+Errors   :     0
+Warnings :     0 reported,     0 suppressed
+Messages :     0 reported,     0 suppressed
+
+
